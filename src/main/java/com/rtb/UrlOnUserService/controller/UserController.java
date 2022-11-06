@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.refreshTokenMissingError;
-import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.userNotFoundError;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -171,25 +170,5 @@ public class UserController {
             throw new RuntimeException(refreshTokenMissingError);
         }
 
-    }
-
-    @PostMapping("/account/forgotPassword")
-    public ResponseEntity<CustomResponse> forgotPassword(@RequestParam("emailId") String email) {
-
-        UrlOnUser user = userService.getUserByEmailId(email);
-        CustomResponse customResponse = new CustomResponse();
-
-        if (user == null) {
-
-            customResponse.setMessage(userNotFoundError);
-            customResponse.setCode("" + HttpStatus.BAD_REQUEST.value());
-        } else {
-
-            emailService.sendPasswordResetUrl(user);
-            customResponse.setCode("" + HttpStatus.OK.value());
-            customResponse.setMessage("Please check you email for password reset.");
-        }
-
-        return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
     }
 }

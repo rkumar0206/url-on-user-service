@@ -19,4 +19,6 @@ public interface UserService {
     UrlOnUser getUserByEmailIdOrByUsername(String username);
 
     AccountVerificationMessage verifyAccount(String token);
+
+    void updateUserPassword(String uid, String password);
 }

@@ -1,8 +1,9 @@
 package com.rtb.UrlOnUserService.util;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.regex.Pattern;
 
-public class CommonUtil {
+public class Utility {
 
     public static boolean isPatterMatches(String str, String regex) {
 
@@ -15,6 +16,12 @@ public class CommonUtil {
 
         String regexPattern = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
         return isPatterMatches(emailAddress, regexPattern);
+    }
+
+    public static String getSiteUrl(HttpServletRequest request) {
+
+        String siteUrl = request.getRequestURL().toString();
+        return siteUrl.replace(request.getServletPath(), "");
     }
 
 }

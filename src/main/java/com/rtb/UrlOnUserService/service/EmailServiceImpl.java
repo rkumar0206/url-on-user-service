@@ -4,11 +4,15 @@ import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
+import com.rtb.UrlOnUserService.util.JWT_Util;
+import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpServletRequest;
 
 @Service
 @Slf4j
@@ -17,6 +21,7 @@ public class EmailServiceImpl implements EmailService {
 
     private final ConfirmationTokenRepository confirmationTokenRepository;
     private final JavaMailSender javaMailSender;
+    private final HttpServletRequest request;
 
     @Override
     public void sendConfirmationToken(UrlOnUser user) {
@@ -39,7 +44,7 @@ public class EmailServiceImpl implements EmailService {
         simpleMailMessage.setSubject(Constants.CONFIRMATION_EMAIL_SUBJECT);
         simpleMailMessage.setFrom(Constants.EMAIL_FROM);
         simpleMailMessage.setText("To verify your account from UrlOn application please click on below link\n" +
-                Constants.CONFIRMATION_EMAIL_BASE_URL + confirmationToken.getConfirmationToken());
+                Utility.getSiteUrl(request) + "/urlon/api/users/account/verify?token=" + confirmationToken.getConfirmationToken());
 
         sendMail(simpleMailMessage);
     }
@@ -52,8 +57,16 @@ public class EmailServiceImpl implements EmailService {
         simpleMailMessage.setTo(user.getEmailId());
         simpleMailMessage.setSubject(Constants.PASSWORD_RESET_EMAIL_SUBJECT);
         simpleMailMessage.setFrom(Constants.EMAIL_FROM);
-        simpleMailMessage.setText("To reset your password please follow the below link\n" +
-                Constants.PASSWORD_RESET_EMAIL_BASE_URL + user.getUid());
+
+        String link = "To reset your password please follow the below link\n" +
+                Utility.getSiteUrl(request) + "/urlon/api/users/account/passwordReset?uid=" + user.getUid() + "&token="
+                + JWT_Util.generateTokenWithExpiry(user.getEmailId(), System.currentTimeMillis() + 10 * 60 * 1000);
+
+        simpleMailMessage.setText("Hello\n" +
+                "You have requested to reset your password. Please click on below url.\n" +
+                link + "\n\n" +
+                "Ignore this email if you do remember your password, or you have not made the request.");
+
         sendMail(simpleMailMessage);
     }
 

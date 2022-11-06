@@ -42,8 +42,11 @@ public class SecurityConfig {
                             "/urlon/app/users/login",
                             "/urlon/api/users/create",
                             "/urlon/api/users/account/verify",
-                            "/urlon/api/users/token/refresh"
+                            "/urlon/api/users/token/refresh",
+                            "/urlon/api/users/account/forgotPassword",
+                            "/urlon/api/users/account/passwordReset"
                             ).permitAll();
+
                     auth.anyRequest().authenticated();
                 })
                 .addFilterAfter(new CustomAuthorizationFilter(environment), UsernamePasswordAuthenticationFilter.class)

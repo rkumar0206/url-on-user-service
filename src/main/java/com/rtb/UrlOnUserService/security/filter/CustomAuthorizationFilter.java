@@ -7,7 +7,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,6 +28,7 @@ import static java.util.Arrays.stream;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 @Component
 @RequiredArgsConstructor
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
@@ -39,7 +39,9 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         if (request.getServletPath().equals("/urlon/app/users/login")
-                || request.getServletPath().equals("/urlon/api/users/token/refresh")) {
+                || request.getServletPath().equals("/urlon/api/users/token/refresh")
+                || request.getServletPath().equals("urlon/api/users/account/forgotPassword")
+                || request.getServletPath().equals("urlon/api/users/account/passwordReset")) {
 
             filterChain.doFilter(request, response);
         } else {

@@ -9,7 +9,7 @@ import com.rtb.UrlOnUserService.models.UserRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
-import com.rtb.UrlOnUserService.util.CommonUtil;
+import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UrlOnUser getUserByEmailIdOrByUsername(String username) {
 
-        if (CommonUtil.isValidEmailAddress(username)) {
+        if (Utility.isValidEmailAddress(username)) {
 
             return getUserByEmailId(username);
         } else {
@@ -144,6 +144,19 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
 
         return AccountVerificationMessage.INVALID;
+    }
+
+    @Override
+    public void updateUserPassword(String uid, String password) {
+
+        UrlOnUser user = getUserByUid(uid);
+
+        if (user != null) {
+            user.setPassword(bCryptPasswordEncoder.encode(password));
+            userRepository.save(user);
+        }else {
+            throw new RuntimeException(userNotFoundError);
+        }
     }
 
     @Override
