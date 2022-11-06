@@ -5,6 +5,7 @@ import com.rtb.UrlOnUserService.security.filter.CustomAuthorizationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -24,6 +25,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationConfiguration authenticationConfiguration;
+    private final Environment environment;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
@@ -44,7 +46,7 @@ public class SecurityConfig {
                             ).permitAll();
                     auth.anyRequest().authenticated();
                 })
-                .addFilterAfter(new CustomAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new CustomAuthorizationFilter(environment), UsernamePasswordAuthenticationFilter.class)
                 .addFilter(customAuthenticationFilter)
                 .build();
     }

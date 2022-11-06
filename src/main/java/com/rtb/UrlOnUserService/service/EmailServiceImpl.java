@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class EmailVerificationServiceImpl implements EmailVerificationService {
+public class EmailServiceImpl implements EmailService {
 
     private final ConfirmationTokenRepository confirmationTokenRepository;
     private final JavaMailSender javaMailSender;
@@ -28,7 +28,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         if (confirmationTokenRepository.findByUserEmailId(user.getEmailId()).isPresent()) {
 
             confirmationToken = confirmationTokenRepository.findByUserEmailId(user.getEmailId()).get();
-        }else {
+        } else {
 
             confirmationTokenRepository.save(confirmationToken);
         }
@@ -37,10 +37,23 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
         simpleMailMessage.setTo(user.getEmailId());
         simpleMailMessage.setSubject(Constants.CONFIRMATION_EMAIL_SUBJECT);
-        simpleMailMessage.setFrom(Constants.CONFIRMATION_EMAIL_FROM);
+        simpleMailMessage.setFrom(Constants.EMAIL_FROM);
         simpleMailMessage.setText("To verify your account from UrlOn application please click on below link\n" +
                 Constants.CONFIRMATION_EMAIL_BASE_URL + confirmationToken.getConfirmationToken());
 
+        sendMail(simpleMailMessage);
+    }
+
+    @Override
+    public void sendPasswordResetUrl(UrlOnUser user) {
+
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+
+        simpleMailMessage.setTo(user.getEmailId());
+        simpleMailMessage.setSubject(Constants.PASSWORD_RESET_EMAIL_SUBJECT);
+        simpleMailMessage.setFrom(Constants.EMAIL_FROM);
+        simpleMailMessage.setText("To reset your password please follow the below link\n" +
+                Constants.PASSWORD_RESET_EMAIL_BASE_URL + user.getUid());
         sendMail(simpleMailMessage);
     }
 

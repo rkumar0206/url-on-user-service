@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final ConfirmationTokenRepository confirmationTokenRepository;
-    private final EmailVerificationService emailVerificationService;
+    private final EmailService emailService;
     private final ObjectMapper objectMapper;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
@@ -84,7 +84,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user = tempUser.get();
 
             if (!user.isAccountVerified()) {
-                emailVerificationService.sendConfirmationToken(user);
+                emailService.sendConfirmationToken(user);
             } else {
 
                 throw new RuntimeException(userAlreadyPresent);
@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             userRepository.save(user);
 
-            emailVerificationService.sendConfirmationToken(user);
+            emailService.sendConfirmationToken(user);
         }
 
         return user;

@@ -38,10 +38,8 @@ public class JWT_Util {
 
         Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
 
-        //long expiry = System.currentTimeMillis() + Constants.ONE_DAY_MILLISECONDS * access_token_expiration_time_day;
-        long expiry = System.currentTimeMillis() + 2 * 60 * 1000;
-
-        System.out.println(expiry);
+        long expiry = System.currentTimeMillis() + Constants.ONE_DAY_MILLISECONDS * access_token_expiration_time_day;
+        //long expiry = System.currentTimeMillis() + 2 * 60 * 1000;
 
         return JWT.create()
                 .withSubject(user.getUsername())
@@ -58,8 +56,8 @@ public class JWT_Util {
 
         Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
 
-        //long expiry = System.currentTimeMillis() + (Constants.ONE_DAY_MILLISECONDS * refresh_token_expiration_time_day);
-        long expiry = System.currentTimeMillis() + 4 * 60 * 1000;
+        long expiry = System.currentTimeMillis() + (Constants.ONE_DAY_MILLISECONDS * refresh_token_expiration_time_day);
+        //long expiry = System.currentTimeMillis() + 4 * 60 * 1000;
 
         return JWT.create().withSubject(user.getUsername())
                 .withExpiresAt(new Date(expiry))
