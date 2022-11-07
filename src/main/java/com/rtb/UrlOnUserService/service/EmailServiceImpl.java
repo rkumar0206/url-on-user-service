@@ -4,7 +4,6 @@ import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
-import com.rtb.UrlOnUserService.util.JWT_Util;
 import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,7 @@ public class EmailServiceImpl implements EmailService {
     private final HttpServletRequest request;
 
     @Override
-    public void sendConfirmationToken(UrlOnUser user) {
+    public void sendConfirmationToken(UrlOnUser user) throws RuntimeException {
 
         log.info("Creating confirmation toke url");
 
@@ -47,10 +46,12 @@ public class EmailServiceImpl implements EmailService {
                 Utility.getSiteUrl(request) + "/urlon/api/users/account/verify?token=" + confirmationToken.getConfirmationToken());
 
         sendMail(simpleMailMessage);
+
     }
 
     @Override
-    public void sendPasswordResetUrl(UrlOnUser user) {
+    public void sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws RuntimeException {
+
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
@@ -58,20 +59,18 @@ public class EmailServiceImpl implements EmailService {
         simpleMailMessage.setSubject(Constants.PASSWORD_RESET_EMAIL_SUBJECT);
         simpleMailMessage.setFrom(Constants.EMAIL_FROM);
 
-        String link = "To reset your password please follow the below link\n" +
-                Utility.getSiteUrl(request) + "/urlon/api/users/account/passwordReset?uid=" + user.getUid() + "&token="
-                + JWT_Util.generateTokenWithExpiry(user.getEmailId(), System.currentTimeMillis() + 10 * 60 * 1000);
-
-        simpleMailMessage.setText("Hello\n" +
-                "You have requested to reset your password. Please click on below url.\n" +
-                link + "\n\n" +
+        simpleMailMessage.setText("Hello\n\n" +
+                "You have requested to reset your password.\n\n" +
+                "To reset your password please follow the below link\n\n" +
+                resetPasswordUrl + "\n\n" +
+                "Link is valid for 10 minutes\n\n" +
                 "Ignore this email if you do remember your password, or you have not made the request.");
 
         sendMail(simpleMailMessage);
     }
 
     @Override
-    public void sendMail(SimpleMailMessage mailMessage) {
+    public void sendMail(SimpleMailMessage mailMessage) throws RuntimeException {
 
         try {
 
@@ -84,6 +83,7 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception e) {
             e.printStackTrace();
             log.info("Mail not sent!!");
+            throw new RuntimeException(e);
         }
     }
 }

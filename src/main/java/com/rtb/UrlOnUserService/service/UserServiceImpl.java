@@ -11,6 +11,7 @@ import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
 import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +29,7 @@ import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
@@ -66,6 +68,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             return getUserByUserName(username);
         }
+    }
+
+    @Override
+    public UrlOnUser getUserByResetPasswordToken(String resetPasswordUrl) {
+
+        return userRepository.findByResetPasswordToken(resetPasswordUrl).orElse(null);
     }
 
     @Override
@@ -147,14 +155,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void updateUserPassword(String uid, String password) {
+    public void updateUserPassword(String uid, String password) throws RuntimeException {
 
         UrlOnUser user = getUserByUid(uid);
 
         if (user != null) {
             user.setPassword(bCryptPasswordEncoder.encode(password));
+            user.setResetPasswordToken(null);
             userRepository.save(user);
-        }else {
+        } else {
+            throw new RuntimeException(userNotFoundError);
+        }
+    }
+
+    @Override
+    public void updateUserResetPasswordToken(String uid, String resetPasswordToken) throws RuntimeException {
+
+        UrlOnUser user = getUserByUid(uid);
+
+        if (user != null) {
+
+            log.info("Reset password token : " + resetPasswordToken);
+            user.setResetPasswordToken(resetPasswordToken);
+            userRepository.save(user);
+        } else {
             throw new RuntimeException(userNotFoundError);
         }
     }
