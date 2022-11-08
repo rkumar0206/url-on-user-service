@@ -1,6 +1,8 @@
 package com.rtb.UrlOnUserService.util;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class Utility {
@@ -22,6 +24,19 @@ public class Utility {
 
         String siteUrl = request.getRequestURL().toString();
         return siteUrl.replace(request.getServletPath(), "");
+    }
+
+    public static List<String> getWhiteListedServletPaths() {
+
+        List<String> whiteListedServletPaths = new ArrayList<>();
+
+        whiteListedServletPaths.add("/urlon/app/users/login");
+        whiteListedServletPaths.add("/urlon/api/users/token/refresh");
+        whiteListedServletPaths.add("urlon/api/users/account/forgotPassword");
+        whiteListedServletPaths.add("urlon/api/users/account/passwordReset");
+
+        return whiteListedServletPaths;
+
     }
 
 }

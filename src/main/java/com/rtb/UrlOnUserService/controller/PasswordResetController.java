@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 
+import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.*;
+import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
+
 @Controller
 @RequestMapping("/urlon/api/users")
 @RequiredArgsConstructor
@@ -36,22 +39,26 @@ public class PasswordResetController {
 
         if (user == null) {
 
-            model.addAttribute("error", "User Invalid");
+            model.addAttribute(ERROR, userNotFoundError);
+        } else if (!user.isAccountVerified()) {
+
+            model.addAttribute(ERROR, accountNotVerifiedError_forgotPassword);
         } else {
 
             String token = JWT_Util.generateTokenWithExpiry(user.getEmailId(), System.currentTimeMillis() + 10 * 60 * 1000);
 
-            String resetPasswordUrl =
-                    Utility.getSiteUrl(request) + "/urlon/api/users/account/passwordReset?uid=" + user.getUid() + "&token=" + token;
+            String resetPasswordUrl = Utility.getSiteUrl(request) + "/urlon/api/users/account/passwordReset?uid=" + user.getUid() + "&token=" + token;
 
             try {
                 emailService.sendPasswordResetUrl(user, resetPasswordUrl);
-                userService.updateUserResetPasswordToken(user.getUid(), token);
-                model.addAttribute("message", "Please check your email for password reset url. The link will expire in 10 minutes");
             } catch (RuntimeException e) {
                 e.printStackTrace();
-                model.addAttribute("error", "Some error occurred while sending mail. Please try again!!");
+                model.addAttribute(ERROR, sendingMailError);
+                return "forgot-password-form";
             }
+
+            userService.updateUserResetPasswordToken(user.getUid(), token);
+            model.addAttribute(MESSAGE, RESET_PASSWORD_MESSAGE);
         }
 
         return "forgot-password-form";
@@ -62,17 +69,14 @@ public class PasswordResetController {
 
         UrlOnUser user = userService.getUserByUid(uid);
 
-        if (user == null
-                || !JWT_Util.isTokenValid(token)
-                || user.getResetPasswordToken() == null
-                || !user.getResetPasswordToken().equals(token)) {
+        if (user == null || !JWT_Util.isTokenValid(token) || user.getResetPasswordToken() == null || !user.getResetPasswordToken().equals(token)) {
 
-            model.addAttribute("message", "Link expired or invalid");
+            model.addAttribute(MESSAGE, linkExpiredOrInvalidError);
             return "reset-password-message";
         }
 
         if (!user.isAccountVerified()) {
-            model.addAttribute("message", "This account is not verified. Please try sign-up using the same email id");
+            model.addAttribute(MESSAGE, accountNotVerifiedError_forgotPassword);
             return "reset-password-message";
         }
 
@@ -89,7 +93,7 @@ public class PasswordResetController {
 
         if (user == null || !JWT_Util.isTokenValid(token)) {
 
-            model.addAttribute("message", "Link expired or invalid");
+            model.addAttribute(MESSAGE, linkExpiredOrInvalidError);
             return "reset-password-message";
         }
 
@@ -99,7 +103,7 @@ public class PasswordResetController {
         // update password
         userService.updateUserPassword(uid, password);
 
-        model.addAttribute("message", "Password reset successful");
+        model.addAttribute(MESSAGE, PASSWORD_RESET_SUCCESSFUL);
         return "reset-password-message";
     }
 

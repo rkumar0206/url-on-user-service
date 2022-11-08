@@ -82,28 +82,40 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         UrlOnUser user;
         Optional<UrlOnUser> tempUser = userRepository.findByEmailId(userRequest.getEmailId());
 
-        // if the user is already present checking if it is the same user trying to create the account
-        // and if it is the same user, checking if the user is not verified, if not sending the confirmation token
-        // else if user is verified then throwing exception
-        if (tempUser.isPresent()
-                && tempUser.get().getUsername().equals(userRequest.getUsername())
-                && tempUser.get().getFirstName().equals(userRequest.getFirstName())) {
+        if (tempUser.isPresent() && !tempUser.get().isAccountVerified()) {
 
             user = tempUser.get();
 
-            if (!user.isAccountVerified()) {
-                emailService.sendConfirmationToken(user);
-            } else {
+            user.setPassword(bCryptPasswordEncoder.encode(userRequest.getPassword()));
 
-                throw new RuntimeException(userAlreadyPresent);
+            if (!user.getUsername().trim().equals(userRequest.getUsername().trim())) {
+
+                if (userRepository.findByUsername(userRequest.getUsername()).isPresent()) {
+                    throw new RuntimeException(duplicateUsernameError);
+                }
             }
+
+            user.setDob(userRequest.getDob());
+            user.setFirstName(userRequest.getFirstName());
+            user.setLastName(userRequest.getLastName());
+            user.setPhoneNumber(userRequest.getPhoneNumber());
+            user.setProfileImage(userRequest.getProfileImage());
+            user.setUsername(userRequest.getUsername());
+
+            userRepository.save(user);
+
+            emailService.sendConfirmationToken(user);
+            log.info("Confirmation token sent");
         } else {
 
             user = objectMapper.convertValue(userRequest, UrlOnUser.class);
-            if (userRepository.findByEmailId(user.getEmailId()).isPresent()) {
+
+            if (userRepository.findByEmailId(user.getEmailId().trim()).isPresent()) {
 
                 throw new RuntimeException(duplicateEmailIdError);
-            } else if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            }
+
+            if (userRepository.findByUsername(user.getUsername().trim()).isPresent()) {
 
                 throw new RuntimeException(duplicateUsernameError);
             }
