@@ -1,6 +1,9 @@
 package com.rtb.UrlOnUserService.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
+import com.rtb.UrlOnUserService.domain.ConfirmationToken;
+import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
 import com.rtb.UrlOnUserService.models.UserRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -19,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -236,5 +240,111 @@ class UserServiceImplTest {
         assertThatThrownBy(() -> userService.saveUser(userRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(duplicateUsernameError);
+    }
+
+    @Test
+    void verifyAccount_confirmationTokenAndUserPresent_verifiedMessage() {
+
+        user.setAccountVerified(false);
+        ConfirmationToken confirmationToken = new ConfirmationToken(user.getEmailId());
+
+        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
+        when(confirmationTokenRepository.findByConfirmationToken(anyString())).thenReturn(Optional.of(confirmationToken));
+
+        AccountVerificationMessage accountVerificationMessage = userService.verifyAccount(anyString());
+
+        assertThat(AccountVerificationMessage.VERIFIED).isEqualTo(accountVerificationMessage);
+        assertThat(true).isEqualTo(user.isAccountVerified());
+
+    }
+
+    @Test
+    void verifyAccount_confirmationTokenAndUserPresent_UserAlreadyVerified_alreadyVerifiedMessage() {
+
+        user.setAccountVerified(true);
+        ConfirmationToken confirmationToken = new ConfirmationToken(user.getEmailId());
+
+        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
+        when(confirmationTokenRepository.findByConfirmationToken(anyString())).thenReturn(Optional.of(confirmationToken));
+
+        AccountVerificationMessage accountVerificationMessage = userService.verifyAccount(anyString());
+
+        assertThat(AccountVerificationMessage.ALREADY_VERIFIED).isEqualTo(accountVerificationMessage);
+        assertThat(true).isEqualTo(user.isAccountVerified());
+
+    }
+
+    @Test
+    void verifyAccount_confirmationTokenPresentButUserNotPresent_invalidMessage() {
+
+        ConfirmationToken confirmationToken = new ConfirmationToken(user.getEmailId());
+
+        when(confirmationTokenRepository.findByConfirmationToken(anyString())).thenReturn(Optional.of(confirmationToken));
+        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.empty());
+
+        AccountVerificationMessage accountVerificationMessage = userService.verifyAccount(anyString());
+        assertThat(AccountVerificationMessage.INVALID).isEqualTo(accountVerificationMessage);
+    }
+
+    @Test
+    void verifyAccount_confirmationTokenNotPresent_invalidMessage() {
+
+        when(confirmationTokenRepository.findByConfirmationToken(anyString())).thenReturn(Optional.empty());
+        AccountVerificationMessage accountVerificationMessage = userService.verifyAccount(anyString());
+        assertThat(AccountVerificationMessage.INVALID).isEqualTo(accountVerificationMessage);
+    }
+
+    @Test
+    void updatePassword_userPresent_updateSuccessful() {
+
+        String oldPassword = user.getPassword();
+        when(userRepository.findByUid(user.getUid())).thenReturn(Optional.of(user));
+
+        userService.updateUserPassword(user.getUid(), anyString());
+
+        assertThat(user.getPassword()).isNotEqualToIgnoringWhitespace(oldPassword);
+
+    }
+
+    @Test
+    void updatePassword_userNotPresent_exceptionThrown() {
+
+        when(userRepository.findByUid(user.getUid())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateUserPassword(user.getUid(), anyString()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(userNotFoundError);
+    }
+
+    @Test
+    void updateUserResetPasswordToken_userPresent_updateSuccessful() {
+
+        user.setResetPasswordToken("");
+        String oldResetPasswordToken = user.getResetPasswordToken();
+        when(userRepository.findByUid(user.getUid())).thenReturn(Optional.of(user));
+        userService.updateUserResetPasswordToken(user.getUid(), UUID.randomUUID().toString());
+
+        assertThat(user.getResetPasswordToken()).isNotEqualToIgnoringWhitespace(oldResetPasswordToken);
+    }
+
+    @Test
+    void updateUserResetPasswordToken_userNotPresent_exceptionThrown() {
+
+        when(userRepository.findByUid(user.getUid())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> userService.updateUserResetPasswordToken(user.getUid(), anyString()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(userNotFoundError);
+    }
+
+    @Test
+    void addRoleToTheUser_success() {
+
+        Role role = new Role(1L, "ROLE_ADMIN");
+
+        when(roleRepository.findByRoleName(anyString())).thenReturn(role);
+
+        userService.addRoleToTheUser(user, "ROLE_ADMIN");
+
+        assertThat(user.getRoles()).isNotEmpty();
     }
 }
