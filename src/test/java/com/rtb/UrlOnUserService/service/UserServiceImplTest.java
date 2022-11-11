@@ -341,7 +341,7 @@ class UserServiceImplTest {
 
         Role role = new Role(1L, "ROLE_ADMIN");
 
-        when(roleRepository.findByRoleName(anyString())).thenReturn(role);
+        when(roleRepository.findByRoleName(anyString())).thenReturn(Optional.of(role));
 
         userService.addRoleToTheUser(user, "ROLE_ADMIN");
 
