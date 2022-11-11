@@ -7,7 +7,7 @@ public interface EmailService {
 
     void sendConfirmationToken(UrlOnUser user) throws RuntimeException;
 
-    void sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws RuntimeException;
+    SimpleMailMessage sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws RuntimeException;
 
     void sendMail(SimpleMailMessage mailMessage) throws RuntimeException;
 }

@@ -12,6 +12,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -27,13 +28,17 @@ public class EmailServiceImpl implements EmailService {
 
         log.info("Creating confirmation toke url");
 
-        ConfirmationToken confirmationToken = new ConfirmationToken(user.getEmailId());
+        ConfirmationToken confirmationToken;
 
-        if (confirmationTokenRepository.findByUserEmailId(user.getEmailId()).isPresent()) {
+        Optional<ConfirmationToken> tokenRepositoryByUserEmailId =
+                confirmationTokenRepository.findByUserEmailId(user.getEmailId());
 
-            confirmationToken = confirmationTokenRepository.findByUserEmailId(user.getEmailId()).get();
+        if (tokenRepositoryByUserEmailId.isPresent()) {
+
+            confirmationToken = tokenRepositoryByUserEmailId.get();
         } else {
 
+            confirmationToken = new ConfirmationToken(user.getEmailId());
             confirmationTokenRepository.save(confirmationToken);
         }
 
@@ -50,8 +55,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws RuntimeException {
-
+    public SimpleMailMessage sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws RuntimeException {
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
@@ -67,6 +71,7 @@ public class EmailServiceImpl implements EmailService {
                 "Ignore this email if you do remember your password, or you have not made the request.");
 
         sendMail(simpleMailMessage);
+        return simpleMailMessage;
     }
 
     @Override

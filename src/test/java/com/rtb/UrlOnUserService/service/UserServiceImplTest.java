@@ -54,7 +54,7 @@ class UserServiceImplTest {
 
         user = new UrlOnUser(
                 null,
-                "test123@gmail.com",
+                "test123@example.com",
                 "test0206",
                 "test@password",
                 "ttttt",
