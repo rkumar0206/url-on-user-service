@@ -9,8 +9,9 @@ import com.rtb.UrlOnUserService.models.UserRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
-import com.rtb.UrlOnUserService.util.CommonUtil;
+import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,12 +29,13 @@ import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final ConfirmationTokenRepository confirmationTokenRepository;
-    private final EmailVerificationService emailVerificationService;
+    private final EmailService emailService;
     private final ObjectMapper objectMapper;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
@@ -59,7 +61,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UrlOnUser getUserByEmailIdOrByUsername(String username) {
 
-        if (CommonUtil.isValidEmailAddress(username)) {
+        if (Utility.isValidEmailAddress(username)) {
 
             return getUserByEmailId(username);
         } else {
@@ -69,33 +71,56 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    public UrlOnUser getUserByResetPasswordToken(String resetPasswordUrl) {
+
+        return userRepository.findByResetPasswordToken(resetPasswordUrl).orElse(null);
+    }
+
+    @Override
     public UrlOnUser saveUser(UserRequest userRequest) {
 
         UrlOnUser user;
         Optional<UrlOnUser> tempUser = userRepository.findByEmailId(userRequest.getEmailId());
 
-        // if the user is already present checking if it is the same user trying to create the account
-        // and if it is the same user, checking if the user is not verified, if not sending the confirmation token
-        // else if user is verified then throwing exception
-        if (tempUser.isPresent()
-                && tempUser.get().getUsername().equals(userRequest.getUsername())
-                && tempUser.get().getFirstName().equals(userRequest.getFirstName())) {
+        if (tempUser.isPresent() && !tempUser.get().isAccountVerified()) {
 
             user = tempUser.get();
 
-            if (!user.isAccountVerified()) {
-                emailVerificationService.sendConfirmationToken(user);
-            } else {
+            user.setPassword(bCryptPasswordEncoder.encode(userRequest.getPassword()));
 
-                throw new RuntimeException(userAlreadyPresent);
+            if (!user.getUsername().trim().equals(userRequest.getUsername().trim())) {
+
+                if (userRepository.findByUsername(userRequest.getUsername()).isPresent()) {
+                    throw new RuntimeException(duplicateUsernameError);
+                }
             }
+
+            user.setDob(userRequest.getDob());
+            user.setFirstName(userRequest.getFirstName());
+            user.setLastName(userRequest.getLastName());
+            user.setPhoneNumber(userRequest.getPhoneNumber());
+            user.setProfileImage(userRequest.getProfileImage());
+            user.setUsername(userRequest.getUsername());
+
+            userRepository.save(user);
+
+            try {
+                emailService.sendConfirmationToken(user);
+            } catch (Exception exception) {
+                log.error(sendingMailError, exception);
+                throw new RuntimeException(sendingMailError);
+            }
+            log.info("Confirmation token sent");
         } else {
 
             user = objectMapper.convertValue(userRequest, UrlOnUser.class);
-            if (userRepository.findByEmailId(user.getEmailId()).isPresent()) {
+
+            if (userRepository.findByEmailId(user.getEmailId().trim()).isPresent()) {
 
                 throw new RuntimeException(duplicateEmailIdError);
-            } else if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            }
+
+            if (userRepository.findByUsername(user.getUsername().trim()).isPresent()) {
 
                 throw new RuntimeException(duplicateUsernameError);
             }
@@ -106,7 +131,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             userRepository.save(user);
 
-            emailVerificationService.sendConfirmationToken(user);
+            try {
+                emailService.sendConfirmationToken(user);
+            } catch (Exception exception) {
+                log.error(sendingMailError, exception);
+                throw new RuntimeException(sendingMailError);
+            }
         }
 
         return user;
@@ -147,10 +177,39 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    public void updateUserPassword(String uid, String password) throws RuntimeException {
+
+        UrlOnUser user = getUserByUid(uid);
+
+        if (user != null) {
+            user.setPassword(bCryptPasswordEncoder.encode(password));
+            user.setResetPasswordToken(null);
+            userRepository.save(user);
+        } else {
+            throw new RuntimeException(userNotFoundError);
+        }
+    }
+
+    @Override
+    public void updateUserResetPasswordToken(String uid, String resetPasswordToken) throws RuntimeException {
+
+        UrlOnUser user = getUserByUid(uid);
+
+        if (user != null) {
+
+            log.info("Reset password token : " + resetPasswordToken);
+            user.setResetPasswordToken(resetPasswordToken);
+            userRepository.save(user);
+        } else {
+            throw new RuntimeException(userNotFoundError);
+        }
+    }
+
+    @Override
     public void addRoleToTheUser(UrlOnUser user, String roleName) {
 
-        Role role = roleRepository.findByRoleName(roleName);
-        user.getRoles().add(role);
+        Optional<Role> role = roleRepository.findByRoleName(roleName);
+        role.ifPresent(value -> user.getRoles().add(value));
     }
 
     @Override

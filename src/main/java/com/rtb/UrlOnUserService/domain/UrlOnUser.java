@@ -39,6 +39,7 @@ public class UrlOnUser {
     private Date dob;
     @Column(name = "is_account_verified")
     private boolean isAccountVerified = false;
+    private String resetPasswordToken;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private Collection<Role> roles = new ArrayList<>();

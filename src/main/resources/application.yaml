@@ -1,6 +1,6 @@
 spring:
   application:
-    name: url_on-user-service
+    name: url-on-user-service
   config:
     import: optional:configserver:http://localhost:8003/
 
