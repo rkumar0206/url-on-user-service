@@ -58,7 +58,7 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void sendConfirmationToken_whenTokenIsNotPresentInDb() {
+    void sendConfirmationToken_whenTokenIsNotPresentInDb() throws Exception {
 
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost:1234"));
         when(request.getServletPath()).thenReturn("");
@@ -72,7 +72,7 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void sendConfirmationToken_whenTokenIsPresentInDb() {
+    void sendConfirmationToken_whenTokenIsPresentInDb() throws Exception {
 
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost:1234"));
         when(request.getServletPath()).thenReturn("");
@@ -88,7 +88,7 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void sendPasswordResetUrl() {
+    void sendPasswordResetUrl() throws Exception {
 
         SimpleMailMessage simpleMailMessage = emailService.sendPasswordResetUrl(user, anyString());
         verify(javaMailSender, times(1)).send(simpleMailMessage);

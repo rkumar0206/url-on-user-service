@@ -24,7 +24,7 @@ public class EmailServiceImpl implements EmailService {
     private final HttpServletRequest request;
 
     @Override
-    public void sendConfirmationToken(UrlOnUser user) throws RuntimeException {
+    public void sendConfirmationToken(UrlOnUser user) throws Exception {
 
         log.info("Creating confirmation toke url");
 
@@ -55,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public SimpleMailMessage sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws RuntimeException {
+    public SimpleMailMessage sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws Exception {
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
@@ -75,7 +75,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendMail(SimpleMailMessage mailMessage) throws RuntimeException {
+    public void sendMail(SimpleMailMessage mailMessage) throws Exception {
 
         try {
 
@@ -88,7 +88,7 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception e) {
             e.printStackTrace();
             log.info("Mail not sent!!");
-            throw new RuntimeException(e);
+            throw e;
         }
     }
 }

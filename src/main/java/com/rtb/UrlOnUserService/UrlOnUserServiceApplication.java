@@ -40,7 +40,7 @@ public class UrlOnUserServiceApplication {
                     null,
                     "rkumar0206@gmail.com",
                     "rkumar0206",
-                    "rohit",
+                    getPasswordEncoder().encode("rohit"),
                     "rrrrr",
                     "Rohit",
                     "Kumar",

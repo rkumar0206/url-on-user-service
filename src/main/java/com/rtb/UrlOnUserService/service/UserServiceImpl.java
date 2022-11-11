@@ -104,7 +104,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             userRepository.save(user);
 
-            emailService.sendConfirmationToken(user);
+            try {
+                emailService.sendConfirmationToken(user);
+            } catch (Exception exception) {
+                log.error(sendingMailError, exception);
+                throw new RuntimeException(sendingMailError);
+            }
             log.info("Confirmation token sent");
         } else {
 
@@ -126,7 +131,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             userRepository.save(user);
 
-            emailService.sendConfirmationToken(user);
+            try {
+                emailService.sendConfirmationToken(user);
+            } catch (Exception exception) {
+                log.error(sendingMailError, exception);
+                throw new RuntimeException(sendingMailError);
+            }
         }
 
         return user;

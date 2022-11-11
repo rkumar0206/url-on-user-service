@@ -51,7 +51,7 @@ public class PasswordResetController {
 
             try {
                 emailService.sendPasswordResetUrl(user, resetPasswordUrl);
-            } catch (RuntimeException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 model.addAttribute(ERROR, sendingMailError);
                 return "forgot-password-form";

@@ -115,7 +115,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void saveUser_newUser_CorrectDetails_userIsSaved() {
+    void saveUser_newUser_CorrectDetails_userIsSaved() throws Exception {
 
         UserRequest userRequest = UserRequest.builder()
                 .firstName("TestFname")
@@ -140,8 +140,6 @@ class UserServiceImplTest {
         UrlOnUser capturedUser = userArgumentCaptor.getValue();
 
         assertThat(capturedUser.getUsername()).isEqualTo(userRequest.getUsername());
-
-
     }
 
     @Test
@@ -187,7 +185,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void saveUser_newUser_AlreadySavedButNotVerified_CorrectDetails_userIsSaved() {
+    void saveUser_newUser_AlreadySavedButNotVerified_CorrectDetails_userIsSaved() throws Exception {
 
         UserRequest userRequest = UserRequest.builder()
                 .firstName("TestFname")
