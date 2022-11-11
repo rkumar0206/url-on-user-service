@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.ACCESS_TOKEN;
+import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.REFRESH_TOKEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Slf4j
@@ -48,12 +50,12 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
         String access_token = JWT_Util.generateAccessToken(user);
         String refresh_token = JWT_Util.generateRefreshToken(user);
 
-        response.setHeader("access_token", access_token);
-        response.setHeader("refresh_token", refresh_token);
+        response.setHeader(ACCESS_TOKEN, access_token);
+        response.setHeader(REFRESH_TOKEN, refresh_token);
 
         Map<String, String> tokens = new HashMap<>();
-        tokens.put("access_token", access_token);
-        tokens.put("refresh_token", refresh_token);
+        tokens.put(ACCESS_TOKEN, access_token);
+        tokens.put(REFRESH_TOKEN, refresh_token);
 
         response.setContentType(APPLICATION_JSON_VALUE);
         new ObjectMapper().writeValue(response.getOutputStream(), tokens);

@@ -29,6 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.*;
+import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.invalidUserDetailsError;
 import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.refreshTokenMissingError;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
@@ -57,7 +59,7 @@ public class UserController {
 
                 userService.saveUser(userRequest);
 
-                response.setMessage("User created successfully. Please check your mail to verify your account.");
+                response.setMessage(USER_CREATED_SUCCESSFULLY);
                 response.setCode("" + HttpStatus.CREATED.value());
 
                 return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -71,7 +73,7 @@ public class UserController {
             }
         } else {
 
-            response.setMessage("Invalid user details");
+            response.setMessage(invalidUserDetailsError);
             response.setCode("" + HttpStatus.BAD_REQUEST.value());
 
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -141,8 +143,8 @@ public class UserController {
                     User user = new User(appUser.getUsername(), "", authorities);
 
                     Map<String, String> tokens = new HashMap<>();
-                    tokens.put("access_token", JWT_Util.generateAccessToken(user));
-                    tokens.put("refresh_token", token);
+                    tokens.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(user));
+                    tokens.put(REFRESH_TOKEN, token);
 
                     response.setContentType(APPLICATION_JSON_VALUE);
                     new ObjectMapper().writeValue(response.getOutputStream(), tokens);

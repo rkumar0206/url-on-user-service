@@ -6,8 +6,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
+import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,21 +25,22 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.ERROR;
 import static java.util.Arrays.stream;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 @Component
 @RequiredArgsConstructor
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
-    private Environment environment;
+    private final Environment environment;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        if (request.getServletPath().equals("/urlon/app/users/login")
-                || request.getServletPath().equals("/urlon/api/users/token/refresh")) {
+        if (Utility.getWhiteListedServletPaths().contains(request.getServletPath())) {
 
             filterChain.doFilter(request, response);
         } else {
@@ -73,11 +74,11 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
                 } catch (Exception e) {
 
                     //token is invalid
-                    response.setHeader("error", e.getMessage());
+                    response.setHeader(ERROR, e.getMessage());
                     response.setStatus(FORBIDDEN.value());
 
                     Map<String, String> error = new HashMap<>();
-                    error.put("error", e.getMessage());
+                    error.put(ERROR, e.getMessage());
 
                     response.setContentType(APPLICATION_JSON_VALUE);
                     new ObjectMapper().writeValue(response.getOutputStream(), error);

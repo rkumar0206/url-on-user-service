@@ -24,6 +24,8 @@ public class JWT_Util {
     private static String secret;
     private static Environment environment;
 
+    private static Algorithm algorithm;
+
     @Autowired
     public JWT_Util(Environment environment) {
         JWT_Util.environment = environment;
@@ -32,16 +34,13 @@ public class JWT_Util {
         refresh_token_expiration_time_day = Integer.parseInt(environment.getProperty("token.refresh_expiration_time_day", "30"));
         issuer = environment.getProperty("token.issuer");
         secret = environment.getProperty("token.secret");
+        algorithm = Algorithm.HMAC256(secret.getBytes());
     }
 
     public static String generateAccessToken(User user) {
 
-        Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
-
-        //long expiry = System.currentTimeMillis() + Constants.ONE_DAY_MILLISECONDS * access_token_expiration_time_day;
-        long expiry = System.currentTimeMillis() + 2 * 60 * 1000;
-
-        System.out.println(expiry);
+        long expiry = System.currentTimeMillis() + Constants.ONE_DAY_MILLISECONDS * access_token_expiration_time_day;
+        //long expiry = System.currentTimeMillis() + 2 * 60 * 1000;
 
         return JWT.create()
                 .withSubject(user.getUsername())
@@ -56,10 +55,8 @@ public class JWT_Util {
 
     public static String generateRefreshToken(User user) {
 
-        Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
-
-        //long expiry = System.currentTimeMillis() + (Constants.ONE_DAY_MILLISECONDS * refresh_token_expiration_time_day);
-        long expiry = System.currentTimeMillis() + 4 * 60 * 1000;
+        long expiry = System.currentTimeMillis() + (Constants.ONE_DAY_MILLISECONDS * refresh_token_expiration_time_day);
+        //long expiry = System.currentTimeMillis() + 4 * 60 * 1000;
 
         return JWT.create().withSubject(user.getUsername())
                 .withExpiresAt(new Date(expiry))
@@ -69,7 +66,16 @@ public class JWT_Util {
 
     }
 
-    public static DecodedJWT verifyTokenAndGetDecodedToken(String token) {
+    public static String generateTokenWithExpiry(String subject, long expiryTimeInMillis) {
+
+        return JWT.create()
+                .withSubject(subject)
+                .withExpiresAt(new Date(expiryTimeInMillis))
+                .withIssuer(issuer)
+                .sign(algorithm);
+    }
+
+    public static boolean isTokenValid(String token) {
 
         try {
 
@@ -77,11 +83,13 @@ public class JWT_Util {
 
             JWTVerifier jwtVerifier = JWT.require(algorithm).build();
 
-            return jwtVerifier.verify(token);
+            jwtVerifier.verify(token);
+
+            return true;
 
         } catch (Exception e) {
 
-            return null;
+            return false;
         }
 
     }
