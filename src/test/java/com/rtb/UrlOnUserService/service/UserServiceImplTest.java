@@ -5,7 +5,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
-import com.rtb.UrlOnUserService.models.UserRequest;
+import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
@@ -111,13 +111,13 @@ class UserServiceImplTest {
 
         assertThatThrownBy(() -> userService.loadUserByUsername("test123@gmail.com"))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining(accountNotVerified);
+                .hasMessageContaining(accountNotVerifiedError);
     }
 
     @Test
     void saveUser_newUser_CorrectDetails_userIsSaved() throws Exception {
 
-        UserRequest userRequest = UserRequest.builder()
+        UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                 .firstName("TestFname")
                 .lastName("TestLname")
                 .emailId("test0574@example.com")
@@ -130,7 +130,7 @@ class UserServiceImplTest {
         when(userRepository.findByEmailId(anyString())).thenReturn(Optional.empty());
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
 
-        userService.saveUser(userRequest);
+        userService.saveUser(userCreateRequest);
 
         ArgumentCaptor<UrlOnUser> userArgumentCaptor = ArgumentCaptor.forClass(UrlOnUser.class);
 
@@ -139,13 +139,13 @@ class UserServiceImplTest {
 
         UrlOnUser capturedUser = userArgumentCaptor.getValue();
 
-        assertThat(capturedUser.getUsername()).isEqualTo(userRequest.getUsername());
+        assertThat(capturedUser.getUsername()).isEqualTo(userCreateRequest.getUsername());
     }
 
     @Test
     void saveUser_newUser_WithEmailIdAlreadyPresent_exceptionIsThrown() {
 
-        UserRequest userRequest = UserRequest.builder()
+        UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                 .firstName("TestFname")
                 .lastName("TestLname")
                 .emailId(user.getEmailId())
@@ -157,7 +157,7 @@ class UserServiceImplTest {
 
         when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.saveUser(userRequest))
+        assertThatThrownBy(() -> userService.saveUser(userCreateRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(duplicateEmailIdError);
 
@@ -166,7 +166,7 @@ class UserServiceImplTest {
     @Test
     void saveUser_newUser_WithUsernameAlreadyPresent_exceptionIsThrown() {
 
-        UserRequest userRequest = UserRequest.builder()
+        UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                 .firstName("TestFname")
                 .lastName("TestLname")
                 .emailId("test79376@gmail.com")
@@ -178,7 +178,7 @@ class UserServiceImplTest {
 
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.saveUser(userRequest))
+        assertThatThrownBy(() -> userService.saveUser(userCreateRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(duplicateUsernameError);
 
@@ -187,7 +187,7 @@ class UserServiceImplTest {
     @Test
     void saveUser_newUser_AlreadySavedButNotVerified_CorrectDetails_userIsSaved() throws Exception {
 
-        UserRequest userRequest = UserRequest.builder()
+        UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                 .firstName("TestFname")
                 .lastName("TestLname")
                 .emailId(user.getEmailId())
@@ -202,7 +202,7 @@ class UserServiceImplTest {
         when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
 
-        userService.saveUser(userRequest);
+        userService.saveUser(userCreateRequest);
 
         ArgumentCaptor<UrlOnUser> userArgumentCaptor = ArgumentCaptor.forClass(UrlOnUser.class);
 
@@ -211,14 +211,14 @@ class UserServiceImplTest {
 
         UrlOnUser capturedUser = userArgumentCaptor.getValue();
 
-        assertThat(capturedUser.getUsername()).isEqualTo(userRequest.getUsername());
+        assertThat(capturedUser.getUsername()).isEqualTo(userCreateRequest.getUsername());
 
     }
 
     @Test
     void saveUser_newUser_AlreadySavedButNotVerified_UsernameDifferentAndAlreadyPresentInDb_exceptionIsThrown() {
 
-        UserRequest userRequest = UserRequest.builder()
+        UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                 .firstName("TestFname")
                 .lastName("TestLname")
                 .emailId(user.getEmailId())
@@ -233,9 +233,9 @@ class UserServiceImplTest {
         UrlOnUser user2 = objectMapper.convertValue(user, UrlOnUser.class);
 
         when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.findByUsername(userRequest.getUsername())).thenReturn(Optional.of(user2));
+        when(userRepository.findByUsername(userCreateRequest.getUsername())).thenReturn(Optional.of(user2));
 
-        assertThatThrownBy(() -> userService.saveUser(userRequest))
+        assertThatThrownBy(() -> userService.saveUser(userCreateRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(duplicateUsernameError);
     }

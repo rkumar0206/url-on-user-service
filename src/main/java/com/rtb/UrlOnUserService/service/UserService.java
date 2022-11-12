@@ -2,13 +2,16 @@ package com.rtb.UrlOnUserService.service;
 
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
-import com.rtb.UrlOnUserService.models.UserRequest;
+import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
+import com.rtb.UrlOnUserService.models.UserCreateRequest;
 
 public interface UserService {
 
-    UrlOnUser saveUser(UserRequest userRequest);
+    UrlOnUser saveUser(UserCreateRequest userCreateRequest);
 
-    UrlOnUser updateUserDetails(UserRequest userRequest);
+    UrlOnUser updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest);
+
+    UrlOnUser changeUserEmailId(String savedEmailID, String requestedEmailId);
 
     void addRoleToTheUser(UrlOnUser user, String roleName);
 

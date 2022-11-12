@@ -10,33 +10,23 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserRequest {
+public class UpdateUserDetailsRequest {
 
     private String emailId;
-    private String username;
+    private String uid;
     private String firstName;
     private String lastName;
     private String phoneNumber;
     private String profileImage;
-    private String password;
     private Date dob;
 
-    @JsonIgnore
-    public boolean isUserDetailsValidForCreate() {
-
-        return emailId != null && !emailId.trim().equals("")
-                && username != null && !username.trim().equals("")
-                && firstName != null && !firstName.trim().equals("")
-                && password != null && !password.trim().equals("")
-                && dob != null;
-    }
 
     @JsonIgnore
     public boolean isUserDetailsValidForUpdate() {
 
         return emailId != null && !emailId.trim().equals("")
+                && uid != null && !uid.trim().equals("")
                 && firstName != null && !firstName.trim().equals("")
                 && dob != null;
     }
-
 }

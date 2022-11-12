@@ -10,7 +10,8 @@ import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
 import com.rtb.UrlOnUserService.models.CustomResponse;
-import com.rtb.UrlOnUserService.models.UserRequest;
+import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
+import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public class UserController {
     private final Environment environment;
 
     @PostMapping("/create")
-    public ResponseEntity<CustomResponse> createUser(@RequestBody UserRequest userRequest) {
+    public ResponseEntity<CustomResponse> createUser(@RequestBody UserCreateRequest userCreateRequest) {
 
         CustomResponse response = CustomResponse
                 .builder()
@@ -54,11 +55,11 @@ public class UserController {
                 .message("Something went wrong")
                 .build();
 
-        if (userRequest.isUserDetailsValidForCreate()) {
+        if (userCreateRequest.isUserDetailsValidForCreate()) {
 
             try {
 
-                userService.saveUser(userRequest);
+                userService.saveUser(userCreateRequest);
 
                 response.setMessage(USER_CREATED_SUCCESSFULLY);
                 response.setCode("" + HttpStatus.CREATED.value());
@@ -78,7 +79,7 @@ public class UserController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<CustomResponse> updateUser(@RequestBody UserRequest userRequest) {
+    public ResponseEntity<CustomResponse> updateUser(@RequestBody UpdateUserDetailsRequest updateUserDetailsRequest) {
 
         CustomResponse response = CustomResponse
                 .builder()
@@ -86,11 +87,11 @@ public class UserController {
                 .message("Something went wrong")
                 .build();
 
-        if (userRequest.isUserDetailsValidForUpdate()) {
+        if (updateUserDetailsRequest.isUserDetailsValidForUpdate()) {
 
             try {
 
-                userService.updateUserDetails(userRequest);
+                userService.updateUserDetails(updateUserDetailsRequest);
 
                 response.setMessage(USER_DETAILS_UPDATED_SUCCESSFULLY);
                 response.setCode("" + HttpStatus.OK.value());
