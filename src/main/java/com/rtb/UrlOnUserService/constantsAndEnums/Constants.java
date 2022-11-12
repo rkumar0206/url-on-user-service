@@ -14,5 +14,6 @@ public class Constants {
     public static final String PASSWORD_RESET_SUCCESSFUL = "Password reset successful";
     public static final String RESET_PASSWORD_MESSAGE = "Please check your email for password reset url. The link will expire in 10 minutes";
     public static final String USER_CREATED_SUCCESSFULLY = "User created successfully. Please check your mail to verify your account.";
+    public static final String USER_DETAILS_UPDATED_SUCCESSFULLY = "User details updated successfully.";
 
 }

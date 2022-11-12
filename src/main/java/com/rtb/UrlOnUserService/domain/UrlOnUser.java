@@ -31,7 +31,7 @@ public class UrlOnUser {
 
     @Column(name = "first_name", nullable = false, length = 30)
     private String firstName;
-    @Column(name = "last_name", length = 40)
+    @Column(name = "last_name", length = 50)
     private String lastName;
     private String profileImage;
     private String phoneNumber;

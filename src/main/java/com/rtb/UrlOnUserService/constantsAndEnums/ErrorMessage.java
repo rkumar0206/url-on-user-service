@@ -10,6 +10,7 @@ public class ErrorMessage {
     public static final String refreshTokenMissingError = "Please pass the refresh token as Authorization token in headers.";
     public static final String sendingMailError = "Some error occurred while sending mail. Please try again!!";
     public static final String linkExpiredOrInvalidError = "Link expired or invalid!!";
-    public static final String invalidUserDetailsError = "User details invalid!!";
+    public static final String invalidUserDetailsForCreateError = "User details invalid!!. email, username, firstName, password and dob is mandatory";
+    public static final String invalidUserDetailsForUpdateError = "User details invalid!!. email, firstName and dob is mandatory.";
 
 }

@@ -22,12 +22,20 @@ public class UserRequest {
     private Date dob;
 
     @JsonIgnore
-    public boolean isUserDetailsValid() {
+    public boolean isUserDetailsValidForCreate() {
 
         return emailId != null && !emailId.trim().equals("")
                 && username != null && !username.trim().equals("")
                 && firstName != null && !firstName.trim().equals("")
                 && password != null && !password.trim().equals("")
+                && dob != null;
+    }
+
+    @JsonIgnore
+    public boolean isUserDetailsValidForUpdate() {
+
+        return emailId != null && !emailId.trim().equals("")
+                && firstName != null && !firstName.trim().equals("")
                 && dob != null;
     }
 

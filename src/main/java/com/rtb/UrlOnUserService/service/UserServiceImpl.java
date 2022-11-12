@@ -144,7 +144,28 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UrlOnUser updateUserDetails(UserRequest userRequest) {
-        return null;
+
+        Optional<UrlOnUser> user = userRepository.findByEmailId(userRequest.getEmailId());
+
+        if (!user.isPresent()) {
+
+            throw new RuntimeException(userNotFoundError);
+        } else {
+
+            user.get().setFirstName(userRequest.getFirstName());
+            user.get().setLastName(userRequest.getLastName());
+            user.get().setProfileImage(userRequest.getProfileImage());
+            user.get().setPhoneNumber(userRequest.getPhoneNumber());
+            user.get().setDob(userRequest.getDob());
+
+            try {
+                userRepository.save(user.get());
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+
+        return user.orElseThrow(() -> new RuntimeException(userNotFoundError));
     }
 
     @Override

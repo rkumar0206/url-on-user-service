@@ -14,6 +14,7 @@ import com.rtb.UrlOnUserService.models.UserRequest;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,8 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.*;
-import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.invalidUserDetailsError;
-import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.refreshTokenMissingError;
+import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -39,6 +39,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping("/urlon/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final UserService userService;
@@ -49,11 +50,11 @@ public class UserController {
 
         CustomResponse response = CustomResponse
                 .builder()
-                .code("" + HttpStatus.BAD_REQUEST.value())
+                .code("" + HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .message("Something went wrong")
                 .build();
 
-        if (userRequest.isUserDetailsValid()) {
+        if (userRequest.isUserDetailsValidForCreate()) {
 
             try {
 
@@ -62,22 +63,51 @@ public class UserController {
                 response.setMessage(USER_CREATED_SUCCESSFULLY);
                 response.setCode("" + HttpStatus.CREATED.value());
 
-                return new ResponseEntity<>(response, HttpStatus.CREATED);
-
             } catch (RuntimeException exception) {
 
                 response.setMessage(exception.getMessage());
                 response.setCode("" + HttpStatus.BAD_REQUEST.value());
 
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
         } else {
 
-            response.setMessage(invalidUserDetailsError);
+            response.setMessage(invalidUserDetailsForCreateError);
             response.setCode("" + HttpStatus.BAD_REQUEST.value());
-
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<CustomResponse> updateUser(@RequestBody UserRequest userRequest) {
+
+        CustomResponse response = CustomResponse
+                .builder()
+                .code("" + HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .message("Something went wrong")
+                .build();
+
+        if (userRequest.isUserDetailsValidForUpdate()) {
+
+            try {
+
+                userService.updateUserDetails(userRequest);
+
+                response.setMessage(USER_DETAILS_UPDATED_SUCCESSFULLY);
+                response.setCode("" + HttpStatus.OK.value());
+                log.info(USER_DETAILS_UPDATED_SUCCESSFULLY);
+            } catch (RuntimeException exception) {
+
+                response.setMessage(exception.getMessage());
+                response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            }
+        } else {
+
+            response.setMessage(invalidUserDetailsForUpdateError);
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            log.error(invalidUserDetailsForUpdateError);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @GetMapping("/account/verify")
@@ -85,7 +115,7 @@ public class UserController {
 
         CustomResponse response = CustomResponse
                 .builder()
-                .code(HttpStatus.BAD_REQUEST.toString())
+                .code(HttpStatus.INTERNAL_SERVER_ERROR.toString())
                 .message("Something went wrong")
                 .build();
 
