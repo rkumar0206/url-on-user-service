@@ -9,6 +9,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
 import com.rtb.UrlOnUserService.models.CustomResponse;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
@@ -49,11 +50,7 @@ public class UserController {
     @PostMapping("/create")
     public ResponseEntity<CustomResponse> createUser(@RequestBody UserCreateRequest userCreateRequest) {
 
-        CustomResponse response = CustomResponse
-                .builder()
-                .code("" + HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Something went wrong")
-                .build();
+        CustomResponse response = new CustomResponse();
 
         if (userCreateRequest.isUserDetailsValidForCreate()) {
 
@@ -67,8 +64,11 @@ public class UserController {
             } catch (RuntimeException exception) {
 
                 response.setMessage(exception.getMessage());
-                response.setCode("" + HttpStatus.BAD_REQUEST.value());
-
+                if (exception.getMessage().equals(sendingMailError)) {
+                    response.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                } else {
+                    response.setCode("" + HttpStatus.BAD_REQUEST.value());
+                }
             }
         } else {
 
@@ -81,11 +81,7 @@ public class UserController {
     @PutMapping("/update")
     public ResponseEntity<CustomResponse> updateUser(@RequestBody UpdateUserDetailsRequest updateUserDetailsRequest) {
 
-        CustomResponse response = CustomResponse
-                .builder()
-                .code("" + HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Something went wrong")
-                .build();
+        CustomResponse response = new CustomResponse();
 
         if (updateUserDetailsRequest.isUserDetailsValidForUpdate()) {
 
@@ -106,6 +102,43 @@ public class UserController {
             response.setMessage(invalidUserDetailsForUpdateError);
             response.setCode("" + HttpStatus.BAD_REQUEST.value());
             log.error(invalidUserDetailsForUpdateError);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/update/emailId")
+    public ResponseEntity<CustomResponse> changeUserEmailID(@RequestBody ChangeUserEmailIdRequest changeUserEmailIdRequest) {
+
+        CustomResponse response = new CustomResponse();
+
+        if (changeUserEmailIdRequest.isRequestValid()) {
+
+            try {
+
+                userService.changeUserEmailId(changeUserEmailIdRequest);
+
+                response.setMessage(USER_EMAIL_ID_UPDATED_SUCCESSFULLY);
+                response.setCode("" + HttpStatus.OK.value());
+
+                log.info(USER_EMAIL_ID_UPDATED_SUCCESSFULLY);
+
+            } catch (RuntimeException exception) {
+
+                response.setMessage(exception.getMessage());
+
+                if (exception.getMessage().equals(sendingMailError)) {
+                    response.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                } else {
+                    response.setCode("" + HttpStatus.BAD_REQUEST.value());
+                }
+            }
+
+        } else {
+
+            response.setMessage(invalidDetailsFoundForChangingEmailIDError);
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            log.error(invalidDetailsFoundForChangingEmailIDError);
         }
 
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));

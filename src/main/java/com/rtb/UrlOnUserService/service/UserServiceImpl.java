@@ -5,6 +5,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -152,13 +153,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (!userByEmail.isPresent() || !userByUid.isPresent()) {
 
             throw new RuntimeException(userNotFoundError);
-        } else if (!userByUid.get().getEmailId().equals(userByEmail.get().getEmailId())) {
-
-            throw new RuntimeException(invalidUserEmailIdAndUID);
-        } else if (!userByUid.get().isAccountVerified()) {
-
-            throw new RuntimeException(accountNotVerifiedError);
         } else {
+
+            validateUserForUpdate(userByEmail.get(), userByUid.get());
 
             userByUid.get().setFirstName(updateUserDetailsRequest.getFirstName());
             userByUid.get().setLastName(updateUserDetailsRequest.getLastName());
@@ -177,10 +174,48 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UrlOnUser changeUserEmailId(String savedEmailID, String requestedEmailId) {
-        return null;
+    public UrlOnUser changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest) {
+
+        Optional<UrlOnUser> userByUid = userRepository.findByUid(changeUserEmailIdRequest.getUid());
+        Optional<UrlOnUser> userByEmail = userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId());
+
+        if (!userByEmail.isPresent() || !userByUid.isPresent()) {
+            throw new RuntimeException(userNotFoundError);
+        } else {
+
+            validateUserForUpdate(userByEmail.get(), userByUid.get());
+
+            log.info("User is valid for updating the details.");
+
+            if (userRepository.findByEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim()).isPresent()) {
+
+                throw new RuntimeException(duplicateEmailIdError);
+            } else {
+
+                log.info("Changing user email id");
+
+                userByEmail.get().setEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim());
+                userByEmail.get().setAccountVerified(false);
+
+                try {
+                    emailService.sendConfirmationToken(userByEmail.get());
+                } catch (Exception exception) {
+                    log.error(sendingMailError, exception);
+                    throw new RuntimeException(sendingMailError);
+                }
+            }
+        }
+        return userByEmail.orElseThrow(() -> new RuntimeException(userNotFoundError));
     }
 
+    private void validateUserForUpdate(UrlOnUser userByEmail, UrlOnUser userByUid) throws RuntimeException {
+
+        if (!userByUid.getEmailId().equals(userByEmail.getEmailId())) {
+            throw new RuntimeException(invalidUserEmailIdAndUID);
+        } else if (!userByEmail.isAccountVerified()) {
+            throw new RuntimeException(accountNotVerifiedError);
+        }
+    }
 
     @Override
     public AccountVerificationMessage verifyAccount(String token) {
