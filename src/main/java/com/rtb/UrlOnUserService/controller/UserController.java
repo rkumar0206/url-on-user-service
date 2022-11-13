@@ -170,6 +170,47 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
+    @GetMapping("/checkUsernameExists/{username}")
+    public ResponseEntity<CustomResponse> isUsernameAlreadyPresent(@PathVariable("username") String username) {
+
+        CustomResponse response = new CustomResponse();
+
+        UrlOnUser user = userService.getUserByUserName(username.trim());
+
+        if (user != null) {
+
+            response.setCode("" + HttpStatus.OK.value());
+            response.setMessage("Username already taken.");
+        } else {
+
+            response.setCode("" + HttpStatus.NO_CONTENT.value());
+            response.setMessage("User not found with this username.");
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @GetMapping("/checkEmailExists/{email}")
+    public ResponseEntity<CustomResponse> isEmailIDAlreadyPresent(@PathVariable("email") String email) {
+
+        CustomResponse response = new CustomResponse();
+
+        UrlOnUser user = userService.getUserByEmailId(email.trim());
+
+        if (user != null) {
+
+            response.setCode("" + HttpStatus.OK.value());
+            response.setMessage("Account already present with this email id.");
+        } else {
+
+            response.setCode("" + HttpStatus.NO_CONTENT.value());
+            response.setMessage("User not found with this Email Id.");
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+
     @GetMapping("/account/verify")
     public ResponseEntity<CustomResponse> verifyAccount(@RequestParam("token") String token) {
 
