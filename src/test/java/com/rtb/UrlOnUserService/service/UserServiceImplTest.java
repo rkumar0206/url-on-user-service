@@ -5,6 +5,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
@@ -344,5 +345,109 @@ class UserServiceImplTest {
         userService.addRoleToTheUser(user, "ROLE_ADMIN");
 
         assertThat(user.getRoles()).isNotEmpty();
+    }
+
+    @Test
+    void updateUserDetails_InformationValid_UpdateSuccessful() {
+
+        UpdateUserDetailsRequest updateUserDetailsRequest = UpdateUserDetailsRequest.builder()
+                .emailId(user.getEmailId())
+                .uid(user.getUid())
+                .firstName("FnameUpdated")
+                .dob(new Date())
+                .phoneNumber("1234456789")
+                .build();
+
+        when(userRepository.findByUid(user.getUid())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailId(user.getEmailId())).thenReturn(Optional.of(user));
+
+        userService.updateUserDetails(updateUserDetailsRequest);
+
+        ArgumentCaptor<UrlOnUser> argumentCaptor = ArgumentCaptor.forClass(UrlOnUser.class);
+
+        verify(userRepository, times(1)).save(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().getFirstName()).isEqualTo(updateUserDetailsRequest.getFirstName());
+        assertThat(argumentCaptor.getValue().getDob()).isEqualTo(updateUserDetailsRequest.getDob());
+
+    }
+
+    @Test
+    void updateUserDetails_UserNotPresent_exceptionIsThrown() {
+
+        UpdateUserDetailsRequest updateUserDetailsRequest = UpdateUserDetailsRequest.builder()
+                .emailId(user.getEmailId())
+                .uid(user.getUid())
+                .firstName("FnameUpdated")
+                .dob(new Date())
+                .phoneNumber("1234456789")
+                .build();
+
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateUserDetails(updateUserDetailsRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(userNotFoundError);
+    }
+
+
+    @Test
+    void updateUserDetails_UserWithUIDAndEmailIsDifferent_exceptionIsThrown() {
+
+        UrlOnUser user2 = new UrlOnUser(
+                null,
+                "test456@example.com",
+                "test0207",
+                "test2@password",
+                "rrrrr",
+                "TestFirstName2",
+                "TestLastName2",
+                null,
+                null,
+                new Date(),
+                true,
+                null,
+                new ArrayList<>()
+        );
+
+        UpdateUserDetailsRequest updateUserDetailsRequest = UpdateUserDetailsRequest.builder()
+                .emailId(user2.getEmailId())
+                .uid(user.getUid())
+                .firstName("FnameUpdated")
+                .dob(new Date())
+                .phoneNumber("1234456789")
+                .build();
+
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user2));
+
+        assertThatThrownBy(() -> userService.updateUserDetails(updateUserDetailsRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(invalidUserAndUIDError);
+    }
+
+    @Test
+    void updateUserDetails_AccountNotActivated_exceptionIsThrown() {
+
+        user.setAccountVerified(false);
+
+        UpdateUserDetailsRequest updateUserDetailsRequest = UpdateUserDetailsRequest.builder()
+                .emailId(user.getEmailId())
+                .uid(user.getUid())
+                .firstName("FnameUpdated")
+                .dob(new Date())
+                .phoneNumber("1234456789")
+                .build();
+
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.updateUserDetails(updateUserDetailsRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(accountNotVerifiedError);
     }
 }
