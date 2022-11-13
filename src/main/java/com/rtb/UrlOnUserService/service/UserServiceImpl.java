@@ -5,7 +5,10 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
-import com.rtb.UrlOnUserService.models.UserRequest;
+import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
+import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
+import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
+import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
@@ -49,7 +52,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             throw new UsernameNotFoundException(userNotFoundError);
         } else if (!user.isAccountVerified()) {
-            throw new RuntimeException(accountNotVerified);
+            throw new RuntimeException(accountNotVerifiedError);
         }
 
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -77,30 +80,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UrlOnUser saveUser(UserRequest userRequest) {
+    public UrlOnUser saveUser(UserCreateRequest userCreateRequest) {
 
         UrlOnUser user;
-        Optional<UrlOnUser> tempUser = userRepository.findByEmailId(userRequest.getEmailId());
+        Optional<UrlOnUser> tempUser = userRepository.findByEmailId(userCreateRequest.getEmailId());
 
         if (tempUser.isPresent() && !tempUser.get().isAccountVerified()) {
 
             user = tempUser.get();
 
-            user.setPassword(bCryptPasswordEncoder.encode(userRequest.getPassword()));
+            user.setPassword(bCryptPasswordEncoder.encode(userCreateRequest.getPassword()));
 
-            if (!user.getUsername().trim().equals(userRequest.getUsername().trim())) {
+            if (!user.getUsername().trim().equals(userCreateRequest.getUsername().trim())) {
 
-                if (userRepository.findByUsername(userRequest.getUsername()).isPresent()) {
+                if (userRepository.findByUsername(userCreateRequest.getUsername()).isPresent()) {
                     throw new RuntimeException(duplicateUsernameError);
                 }
             }
 
-            user.setDob(userRequest.getDob());
-            user.setFirstName(userRequest.getFirstName());
-            user.setLastName(userRequest.getLastName());
-            user.setPhoneNumber(userRequest.getPhoneNumber());
-            user.setProfileImage(userRequest.getProfileImage());
-            user.setUsername(userRequest.getUsername());
+            user.setDob(userCreateRequest.getDob());
+            user.setFirstName(userCreateRequest.getFirstName());
+            user.setLastName(userCreateRequest.getLastName());
+            user.setPhoneNumber(userCreateRequest.getPhoneNumber());
+            user.setProfileImage(userCreateRequest.getProfileImage());
+            user.setUsername(userCreateRequest.getUsername());
 
             userRepository.save(user);
 
@@ -113,7 +116,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             log.info("Confirmation token sent");
         } else {
 
-            user = objectMapper.convertValue(userRequest, UrlOnUser.class);
+            user = objectMapper.convertValue(userCreateRequest, UrlOnUser.class);
 
             if (userRepository.findByEmailId(user.getEmailId().trim()).isPresent()) {
 
@@ -143,8 +146,105 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UrlOnUser updateUserDetails(UserRequest userRequest) {
-        return null;
+    public UrlOnUser updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest) {
+
+        Optional<UrlOnUser> userByUid = userRepository.findByUid(updateUserDetailsRequest.getUid());
+        Optional<UrlOnUser> userByEmail = userRepository.findByEmailId(updateUserDetailsRequest.getEmailId());
+
+        if (!userByEmail.isPresent() || !userByUid.isPresent()) {
+
+            throw new RuntimeException(userNotFoundError);
+        } else {
+
+            validateUserForUpdate(userByEmail.get(), userByUid.get());
+
+            userByUid.get().setFirstName(updateUserDetailsRequest.getFirstName());
+            userByUid.get().setLastName(updateUserDetailsRequest.getLastName());
+            userByUid.get().setProfileImage(updateUserDetailsRequest.getProfileImage());
+            userByUid.get().setPhoneNumber(updateUserDetailsRequest.getPhoneNumber());
+            userByUid.get().setDob(updateUserDetailsRequest.getDob());
+
+            try {
+                userRepository.save(userByUid.get());
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+
+        return userByUid.orElseThrow(() -> new RuntimeException(userNotFoundError));
+    }
+
+    @Override
+    public UrlOnUser changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest) {
+
+        Optional<UrlOnUser> userByUid = userRepository.findByUid(changeUserEmailIdRequest.getUid());
+        Optional<UrlOnUser> userByEmail = userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId());
+
+        if (!userByEmail.isPresent() || !userByUid.isPresent()) {
+            throw new RuntimeException(userNotFoundError);
+        } else {
+
+            validateUserForUpdate(userByEmail.get(), userByUid.get());
+
+            log.info("User is valid for updating the details.");
+
+            if (userRepository.findByEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim()).isPresent()) {
+
+                throw new RuntimeException(duplicateEmailIdError);
+            } else {
+
+                log.info("Changing user email id");
+
+                userByEmail.get().setEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim());
+                userByEmail.get().setAccountVerified(false);
+
+                userRepository.save(userByEmail.get());
+                try {
+                    emailService.sendConfirmationToken(userByEmail.get());
+                } catch (Exception exception) {
+                    log.error(sendingMailError, exception);
+                    throw new RuntimeException(sendingMailError);
+                }
+            }
+        }
+        return userByEmail.orElseThrow(() -> new RuntimeException(userNotFoundError));
+    }
+
+    @Override
+    public UrlOnUser changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest) {
+
+        Optional<UrlOnUser> userByUid = userRepository.findByUid(changeUserUsernameRequest.getUid());
+        Optional<UrlOnUser> userByUsername = userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername());
+
+        if (!userByUsername.isPresent() || !userByUid.isPresent()) {
+            throw new RuntimeException(userNotFoundError);
+        } else {
+
+            validateUserForUpdate(userByUsername.get(), userByUid.get());
+
+            log.info("User is valid for updating the details.");
+
+            if (userRepository.findByUsername(changeUserUsernameRequest.getRequestedUsername().trim()).isPresent()) {
+
+                throw new RuntimeException(duplicateUsernameError);
+            } else {
+
+                userByUsername.get().setUsername(changeUserUsernameRequest.getRequestedUsername().trim());
+
+                userRepository.save(userByUsername.get());
+                log.info("Changed user's username to " + changeUserUsernameRequest.getRequestedUsername());
+            }
+        }
+        return userByUsername.orElseThrow(() -> new RuntimeException(userNotFoundError));
+    }
+
+    private void validateUserForUpdate(UrlOnUser user, UrlOnUser userByUid) throws RuntimeException {
+
+        if (user != userByUid) {
+            throw new RuntimeException(invalidUserAndUIDError);
+        } else if (!user.isAccountVerified()) {
+            throw new RuntimeException(accountNotVerifiedError);
+        }
     }
 
     @Override

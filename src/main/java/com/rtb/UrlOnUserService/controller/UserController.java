@@ -9,11 +9,11 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
-import com.rtb.UrlOnUserService.models.CustomResponse;
-import com.rtb.UrlOnUserService.models.UserRequest;
+import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,8 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.*;
-import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.invalidUserDetailsError;
-import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.refreshTokenMissingError;
+import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -39,45 +38,136 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping("/urlon/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final UserService userService;
     private final Environment environment;
 
     @PostMapping("/create")
-    public ResponseEntity<CustomResponse> createUser(@RequestBody UserRequest userRequest) {
+    public ResponseEntity<CustomResponse> createUser(@RequestBody UserCreateRequest userCreateRequest) {
 
-        CustomResponse response = CustomResponse
-                .builder()
-                .code("" + HttpStatus.BAD_REQUEST.value())
-                .message("Something went wrong")
-                .build();
+        CustomResponse response = new CustomResponse();
 
-        if (userRequest.isUserDetailsValid()) {
+        if (userCreateRequest.isUserDetailsValidForCreate()) {
 
             try {
-
-                userService.saveUser(userRequest);
+                userService.saveUser(userCreateRequest);
 
                 response.setMessage(USER_CREATED_SUCCESSFULLY);
                 response.setCode("" + HttpStatus.CREATED.value());
 
-                return new ResponseEntity<>(response, HttpStatus.CREATED);
+            } catch (RuntimeException exception) {
+
+                response.setMessage(exception.getMessage());
+                if (exception.getMessage().equals(sendingMailError)) {
+                    response.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                } else {
+                    response.setCode("" + HttpStatus.BAD_REQUEST.value());
+                }
+            }
+        } else {
+
+            response.setMessage(invalidUserDetailsForCreateError);
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
+        }
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<CustomResponse> updateUser(@RequestBody UpdateUserDetailsRequest updateUserDetailsRequest) {
+
+        CustomResponse response = new CustomResponse();
+
+        if (updateUserDetailsRequest.isUserDetailsValidForUpdate()) {
+
+            try {
+
+                userService.updateUserDetails(updateUserDetailsRequest);
+
+                response.setMessage(USER_DETAILS_UPDATED_SUCCESSFULLY);
+                response.setCode("" + HttpStatus.OK.value());
+                log.info(USER_DETAILS_UPDATED_SUCCESSFULLY);
+            } catch (RuntimeException exception) {
+
+                response.setMessage(exception.getMessage());
+                response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            }
+        } else {
+
+            response.setMessage(invalidUserDetailsForUpdateError);
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            log.error(invalidUserDetailsForUpdateError);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/update/emailId")
+    public ResponseEntity<CustomResponse> changeUserEmailID(@RequestBody ChangeUserEmailIdRequest changeUserEmailIdRequest) {
+
+        CustomResponse response = new CustomResponse();
+
+        if (changeUserEmailIdRequest.isRequestValid()) {
+
+            try {
+
+                userService.changeUserEmailId(changeUserEmailIdRequest);
+
+                response.setMessage(USER_EMAIL_ID_UPDATED_SUCCESSFULLY);
+                response.setCode("" + HttpStatus.OK.value());
+
+                log.info(USER_EMAIL_ID_UPDATED_SUCCESSFULLY);
+
+            } catch (RuntimeException exception) {
+
+                response.setMessage(exception.getMessage());
+
+                if (exception.getMessage().equals(sendingMailError)) {
+                    response.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                } else {
+                    response.setCode("" + HttpStatus.BAD_REQUEST.value());
+                }
+            }
+
+        } else {
+
+            response.setMessage(invalidDetailsFoundForChangingEmailIDError);
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            log.error(invalidDetailsFoundForChangingEmailIDError);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/update/username")
+    public ResponseEntity<CustomResponse> changeUserUsername(@RequestBody ChangeUserUsernameRequest changeUserUsernameRequest) {
+
+        CustomResponse response = new CustomResponse();
+
+        if (changeUserUsernameRequest.isRequestValid()) {
+
+            try {
+                userService.changeUserUsername(changeUserUsernameRequest);
+
+                response.setMessage(USER_USERNAME_UPDATED_SUCCESSFULLY);
+                response.setCode("" + HttpStatus.OK.value());
+
+                log.info(USER_USERNAME_UPDATED_SUCCESSFULLY);
 
             } catch (RuntimeException exception) {
 
                 response.setMessage(exception.getMessage());
                 response.setCode("" + HttpStatus.BAD_REQUEST.value());
-
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
         } else {
 
-            response.setMessage(invalidUserDetailsError);
+            response.setMessage(invalidDetailsFoundForChangingUsernameError);
             response.setCode("" + HttpStatus.BAD_REQUEST.value());
-
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            log.error(invalidDetailsFoundForChangingUsernameError);
         }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @GetMapping("/account/verify")
@@ -85,7 +175,7 @@ public class UserController {
 
         CustomResponse response = CustomResponse
                 .builder()
-                .code(HttpStatus.BAD_REQUEST.toString())
+                .code(HttpStatus.INTERNAL_SERVER_ERROR.toString())
                 .message("Something went wrong")
                 .build();
 
