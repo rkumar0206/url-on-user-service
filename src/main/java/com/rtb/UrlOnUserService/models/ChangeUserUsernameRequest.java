@@ -9,19 +9,20 @@ import org.springframework.util.StringUtils;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ChangeUserEmailIdRequest {
+public class ChangeUserUsernameRequest {
 
-    private String previousEmailId;
-    private String requestedEmailId;
+    private String previousUsername;
+    private String requestedUsername;
     private String uid;
 
     @JsonIgnore
     public boolean isRequestValid() {
 
-        return StringUtils.hasLength(previousEmailId.trim())
-                && StringUtils.hasLength(requestedEmailId.trim())
-                && !previousEmailId.trim().equals(requestedEmailId.trim())
+        return StringUtils.hasLength(previousUsername.trim())
+                && StringUtils.hasLength(requestedUsername.trim())
+                && !previousUsername.trim().equals(requestedUsername.trim())
                 && StringUtils.hasLength(uid.trim());
+
     }
 
 }

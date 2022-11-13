@@ -2,6 +2,7 @@ package com.rtb.UrlOnUserService.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 
@@ -24,9 +25,9 @@ public class UpdateUserDetailsRequest {
     @JsonIgnore
     public boolean isUserDetailsValidForUpdate() {
 
-        return emailId != null && !emailId.trim().equals("")
-                && uid != null && !uid.trim().equals("")
-                && firstName != null && !firstName.trim().equals("")
+        return StringUtils.hasLength(emailId.trim())
+                && StringUtils.hasLength(uid.trim())
+                && StringUtils.hasLength(firstName.trim())
                 && dob != null;
     }
 }

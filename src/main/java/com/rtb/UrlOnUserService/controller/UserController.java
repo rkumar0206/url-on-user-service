@@ -9,10 +9,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
-import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
-import com.rtb.UrlOnUserService.models.CustomResponse;
-import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
-import com.rtb.UrlOnUserService.models.UserCreateRequest;
+import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +52,6 @@ public class UserController {
         if (userCreateRequest.isUserDetailsValidForCreate()) {
 
             try {
-
                 userService.saveUser(userCreateRequest);
 
                 response.setMessage(USER_CREATED_SUCCESSFULLY);
@@ -139,6 +135,36 @@ public class UserController {
             response.setMessage(invalidDetailsFoundForChangingEmailIDError);
             response.setCode("" + HttpStatus.BAD_REQUEST.value());
             log.error(invalidDetailsFoundForChangingEmailIDError);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/update/username")
+    public ResponseEntity<CustomResponse> changeUserUsername(@RequestBody ChangeUserUsernameRequest changeUserUsernameRequest) {
+
+        CustomResponse response = new CustomResponse();
+
+        if (changeUserUsernameRequest.isRequestValid()) {
+
+            try {
+                userService.changeUserUsername(changeUserUsernameRequest);
+
+                response.setMessage(USER_USERNAME_UPDATED_SUCCESSFULLY);
+                response.setCode("" + HttpStatus.OK.value());
+
+                log.info(USER_USERNAME_UPDATED_SUCCESSFULLY);
+
+            } catch (RuntimeException exception) {
+
+                response.setMessage(exception.getMessage());
+                response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            }
+        } else {
+
+            response.setMessage(invalidDetailsFoundForChangingUsernameError);
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
+            log.error(invalidDetailsFoundForChangingUsernameError);
         }
 
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));

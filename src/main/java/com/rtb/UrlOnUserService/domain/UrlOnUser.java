@@ -3,6 +3,7 @@ package com.rtb.UrlOnUserService.domain;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -14,7 +15,7 @@ import java.util.Date;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class UrlOnUser {
+public class UrlOnUser implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

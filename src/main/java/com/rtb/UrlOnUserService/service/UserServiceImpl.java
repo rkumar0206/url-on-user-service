@@ -6,6 +6,7 @@ import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UrlOnUser;
 import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
+import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -197,6 +198,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 userByEmail.get().setEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim());
                 userByEmail.get().setAccountVerified(false);
 
+                userRepository.save(userByEmail.get());
                 try {
                     emailService.sendConfirmationToken(userByEmail.get());
                 } catch (Exception exception) {
@@ -208,11 +210,39 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return userByEmail.orElseThrow(() -> new RuntimeException(userNotFoundError));
     }
 
-    private void validateUserForUpdate(UrlOnUser userByEmail, UrlOnUser userByUid) throws RuntimeException {
+    @Override
+    public UrlOnUser changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest) {
 
-        if (!userByUid.getEmailId().equals(userByEmail.getEmailId())) {
-            throw new RuntimeException(invalidUserEmailIdAndUID);
-        } else if (!userByEmail.isAccountVerified()) {
+        Optional<UrlOnUser> userByUid = userRepository.findByUid(changeUserUsernameRequest.getUid());
+        Optional<UrlOnUser> userByUsername = userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername());
+
+        if (!userByUsername.isPresent() || !userByUid.isPresent()) {
+            throw new RuntimeException(userNotFoundError);
+        } else {
+
+            validateUserForUpdate(userByUsername.get(), userByUid.get());
+
+            log.info("User is valid for updating the details.");
+
+            if (userRepository.findByUsername(changeUserUsernameRequest.getRequestedUsername().trim()).isPresent()) {
+
+                throw new RuntimeException(duplicateUsernameError);
+            } else {
+
+                userByUsername.get().setUsername(changeUserUsernameRequest.getRequestedUsername().trim());
+
+                userRepository.save(userByUsername.get());
+                log.info("Changed user's username to " + changeUserUsernameRequest.getRequestedUsername());
+            }
+        }
+        return userByUsername.orElseThrow(() -> new RuntimeException(userNotFoundError));
+    }
+
+    private void validateUserForUpdate(UrlOnUser user, UrlOnUser userByUid) throws RuntimeException {
+
+        if (user != userByUid) {
+            throw new RuntimeException(invalidUserAndUIDError);
+        } else if (!user.isAccountVerified()) {
             throw new RuntimeException(accountNotVerifiedError);
         }
     }
