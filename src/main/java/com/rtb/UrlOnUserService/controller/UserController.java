@@ -12,6 +12,7 @@ import com.rtb.UrlOnUserService.domain.UrlOnUser;
 import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
+import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -43,6 +44,7 @@ public class UserController {
 
     private final UserService userService;
     private final Environment environment;
+    private final ObjectMapper objectMapper;
 
     @PostMapping("/create")
     public ResponseEntity<CustomResponse> createUser(@RequestBody UserCreateRequest userCreateRequest) {
@@ -210,6 +212,52 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
+    @GetMapping("/detail/self/{uid}")
+    public ResponseEntity<UserSelfDetailsResponse> getUserDetailsOfRequestingUser(HttpServletRequest request, @PathVariable("uid") String uid) {
+
+        String authorizationHeader = request.getHeader(AUTHORIZATION);
+
+        if (authorizationHeader != null && authorizationHeader.startsWith(Constants.BEARER)) {
+
+            String token = Utility.getTokenFromAuthorizationHeader(authorizationHeader);
+            String username = JWT_Util.getUsername(token);
+
+            UrlOnUser user = userService.getUserByEmailIdOrByUsername(username);
+
+            if (!user.getUid().equals(uid.trim())) {
+                throw new RuntimeException("User verification failed for this user.");
+            }
+
+            UserSelfDetailsResponse userSelfDetailsResponse = objectMapper.convertValue(user, UserSelfDetailsResponse.class);
+            return new ResponseEntity<>(userSelfDetailsResponse, HttpStatus.OK);
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/detail/{username}")
+    public ResponseEntity<UserDetailResponse> getUserDetailsUsingUsername(HttpServletRequest request, @PathVariable("username") String username) {
+
+        UrlOnUser user = userService.getUserByUserName(username);
+
+        if (user != null) {
+            UserDetailResponse userDetailResponse = UserDetailResponse
+                    .builder()
+                    .username(user.getUsername())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .profileImage(user.getProfileImage())
+                    .phoneNumber(user.getPhoneNumber())
+                    .dob(user.getDob())
+                    .build();
+
+            return new ResponseEntity<>(userDetailResponse, HttpStatus.OK);
+        } else {
+
+            return ResponseEntity.noContent().build();
+        }
+    }
+
 
     @GetMapping("/account/verify")
     public ResponseEntity<CustomResponse> verifyAccount(@RequestParam("token") String token) {
@@ -254,7 +302,7 @@ public class UserController {
 
         if (authorizationHeader != null && authorizationHeader.startsWith(Constants.BEARER)) {
 
-            String token = authorizationHeader.substring(Constants.BEARER.length());
+            String token = Utility.getTokenFromAuthorizationHeader(authorizationHeader);
 
             try {
 

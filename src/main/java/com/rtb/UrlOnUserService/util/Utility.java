@@ -1,5 +1,7 @@
 package com.rtb.UrlOnUserService.util;
 
+import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +39,11 @@ public class Utility {
 
         return whiteListedServletPaths;
 
+    }
+
+    public static String getTokenFromAuthorizationHeader(String authorizationHeader) {
+
+        return authorizationHeader.substring(Constants.BEARER.length());
     }
 
 }
