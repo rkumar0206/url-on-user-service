@@ -228,7 +228,18 @@ public class UserController {
                 throw new RuntimeException("User verification failed for this user.");
             }
 
-            UserSelfDetailsResponse userSelfDetailsResponse = objectMapper.convertValue(user, UserSelfDetailsResponse.class);
+            UserSelfDetailsResponse userSelfDetailsResponse = UserSelfDetailsResponse.builder()
+                    .emailId(user.getEmailId())
+                    .username(user.getUsername())
+                    .uid(user.getUid())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .profileImage(user.getProfileImage())
+                    .phoneNumber(user.getPhoneNumber())
+                    .dob(user.getDob())
+                    .roles(user.getRoles())
+                    .build();
+
             return new ResponseEntity<>(userSelfDetailsResponse, HttpStatus.OK);
         }
 
