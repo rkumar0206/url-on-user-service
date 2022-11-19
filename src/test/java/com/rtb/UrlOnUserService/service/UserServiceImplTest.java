@@ -123,6 +123,7 @@ class UserServiceImplTest {
                 .lastName("TestLname")
                 .emailId("test0574@example.com")
                 .username("testing0206")
+                .password("SOmePassword")
                 .dob(new Date())
                 .phoneNumber(null)
                 .profileImage(null)
