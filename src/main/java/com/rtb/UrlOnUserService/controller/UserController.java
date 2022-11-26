@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.Role;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
@@ -177,7 +177,7 @@ public class UserController {
 
         CustomResponse response = new CustomResponse();
 
-        UrlOnUser user = userService.getUserByUserName(username.trim());
+        UserAccount user = userService.getUserByUserName(username.trim());
 
         if (user != null) {
 
@@ -197,7 +197,7 @@ public class UserController {
 
         CustomResponse response = new CustomResponse();
 
-        UrlOnUser user = userService.getUserByEmailId(email.trim());
+        UserAccount user = userService.getUserByEmailId(email.trim());
 
         if (user != null) {
 
@@ -222,7 +222,7 @@ public class UserController {
             String token = Utility.getTokenFromAuthorizationHeader(authorizationHeader);
             String username = JWT_Util.getUsername(token);
 
-            UrlOnUser user = userService.getUserByEmailIdOrByUsername(username);
+            UserAccount user = userService.getUserByEmailIdOrByUsername(username);
 
             if (!user.getUid().equals(uid.trim())) {
                 throw new RuntimeException("User verification failed for this user.");
@@ -249,7 +249,7 @@ public class UserController {
     @GetMapping("/detail/{username}")
     public ResponseEntity<UserDetailResponse> getUserDetailsUsingUsername(HttpServletRequest request, @PathVariable("username") String username) {
 
-        UrlOnUser user = userService.getUserByUserName(username);
+        UserAccount user = userService.getUserByUserName(username);
 
         if (user != null) {
             UserDetailResponse userDetailResponse = UserDetailResponse
@@ -322,7 +322,7 @@ public class UserController {
                 DecodedJWT decodedJWT = jwtVerifier.verify(token);
 
                 String username = decodedJWT.getSubject();
-                UrlOnUser appUser = userService.getUserByEmailIdOrByUsername(username);
+                UserAccount appUser = userService.getUserByEmailIdOrByUsername(username);
 
                 if (appUser != null && appUser.isAccountVerified()) {
 

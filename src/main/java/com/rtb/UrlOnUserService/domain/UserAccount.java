@@ -9,13 +9,13 @@ import java.util.Collection;
 import java.util.Date;
 
 @Entity
-@Table(name = "UrlOnUser")
+@Table(name = "user_account")
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class UrlOnUser implements Serializable {
+public class UserAccount implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

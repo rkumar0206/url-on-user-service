@@ -2,7 +2,7 @@ package com.rtb.UrlOnUserService.service;
 
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class EmailServiceImpl implements EmailService {
     private final HttpServletRequest request;
 
     @Override
-    public void sendConfirmationToken(UrlOnUser user) throws Exception {
+    public void sendConfirmationToken(UserAccount user) throws Exception {
 
         log.info("Creating confirmation toke url");
 
@@ -55,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public SimpleMailMessage sendPasswordResetUrl(UrlOnUser user, String resetPasswordUrl) throws Exception {
+    public SimpleMailMessage sendPasswordResetUrl(UserAccount user, String resetPasswordUrl) throws Exception {
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 

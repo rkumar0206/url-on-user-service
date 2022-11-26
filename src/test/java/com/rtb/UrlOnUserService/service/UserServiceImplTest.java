@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
-    private static UrlOnUser user;
+    private static UserAccount user;
     private UserServiceImpl userService;
     @Mock
     private UserRepository userRepository;
@@ -53,7 +53,7 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
 
-        user = new UrlOnUser(
+        user = new UserAccount(
                 null,
                 "test123@example.com",
                 "test0206",
@@ -134,12 +134,12 @@ class UserServiceImplTest {
 
         userService.saveUser(userCreateRequest);
 
-        ArgumentCaptor<UrlOnUser> userArgumentCaptor = ArgumentCaptor.forClass(UrlOnUser.class);
+        ArgumentCaptor<UserAccount> userArgumentCaptor = ArgumentCaptor.forClass(UserAccount.class);
 
         verify(userRepository).save(userArgumentCaptor.capture());
         verify(emailService, times(1)).sendConfirmationToken(any());
 
-        UrlOnUser capturedUser = userArgumentCaptor.getValue();
+        UserAccount capturedUser = userArgumentCaptor.getValue();
 
         assertThat(capturedUser.getUsername()).isEqualTo(userCreateRequest.getUsername());
     }
@@ -206,12 +206,12 @@ class UserServiceImplTest {
 
         userService.saveUser(userCreateRequest);
 
-        ArgumentCaptor<UrlOnUser> userArgumentCaptor = ArgumentCaptor.forClass(UrlOnUser.class);
+        ArgumentCaptor<UserAccount> userArgumentCaptor = ArgumentCaptor.forClass(UserAccount.class);
 
         verify(userRepository).save(userArgumentCaptor.capture());
         verify(emailService, times(1)).sendConfirmationToken(any());
 
-        UrlOnUser capturedUser = userArgumentCaptor.getValue();
+        UserAccount capturedUser = userArgumentCaptor.getValue();
 
         assertThat(capturedUser.getUsername()).isEqualTo(userCreateRequest.getUsername());
 
@@ -232,7 +232,7 @@ class UserServiceImplTest {
 
         user.setAccountVerified(false);
 
-        UrlOnUser user2 = objectMapper.convertValue(user, UrlOnUser.class);
+        UserAccount user2 = objectMapper.convertValue(user, UserAccount.class);
 
         when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
         when(userRepository.findByUsername(userCreateRequest.getUsername())).thenReturn(Optional.of(user2));
@@ -364,7 +364,7 @@ class UserServiceImplTest {
 
         userService.updateUserDetails(updateUserDetailsRequest);
 
-        ArgumentCaptor<UrlOnUser> argumentCaptor = ArgumentCaptor.forClass(UrlOnUser.class);
+        ArgumentCaptor<UserAccount> argumentCaptor = ArgumentCaptor.forClass(UserAccount.class);
 
         verify(userRepository, times(1)).save(argumentCaptor.capture());
 
@@ -397,7 +397,7 @@ class UserServiceImplTest {
     @Test
     void updateUserDetails_UserWithUIDAndEmailIsDifferent_exceptionIsThrown() {
 
-        UrlOnUser user2 = new UrlOnUser(
+        UserAccount user2 = new UserAccount(
                 null,
                 "test456@example.com",
                 "test0207",

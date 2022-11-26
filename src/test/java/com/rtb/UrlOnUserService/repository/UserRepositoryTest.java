@@ -1,6 +1,6 @@
 package com.rtb.UrlOnUserService.repository;
 
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +19,14 @@ class UserRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
-    private UrlOnUser user;
+    private UserAccount user;
 
     @BeforeEach
     void setup() {
 
         userRepository.deleteAll();
 
-        user = new UrlOnUser(
+        user = new UserAccount(
                 null,
                 "test123@example.com",
                 "test0206",
@@ -48,7 +48,7 @@ class UserRepositoryTest {
     @Test
     void findByUsername() {
 
-        Optional<UrlOnUser> expectedUser = userRepository.findByUsername(user.getUsername());
+        Optional<UserAccount> expectedUser = userRepository.findByUsername(user.getUsername());
 
         assertThat(expectedUser).isPresent();
     }
@@ -56,7 +56,7 @@ class UserRepositoryTest {
     @Test
     void findByEmailId() {
 
-        Optional<UrlOnUser> expectedUser = userRepository.findByEmailId(user.getEmailId());
+        Optional<UserAccount> expectedUser = userRepository.findByEmailId(user.getEmailId());
 
         assertThat(expectedUser).isPresent();
     }
@@ -64,13 +64,13 @@ class UserRepositoryTest {
     @Test
     void findByUid() {
 
-        Optional<UrlOnUser> expectedUser = userRepository.findByUid(user.getUid());
+        Optional<UserAccount> expectedUser = userRepository.findByUid(user.getUid());
         assertThat(expectedUser).isPresent();
     }
 
     @Test
     void findByResetPasswordToken() {
-        Optional<UrlOnUser> expectedUser = userRepository.findByResetPasswordToken(user.getResetPasswordToken());
+        Optional<UserAccount> expectedUser = userRepository.findByResetPasswordToken(user.getResetPasswordToken());
         assertThat(expectedUser).isPresent();
     }
 }

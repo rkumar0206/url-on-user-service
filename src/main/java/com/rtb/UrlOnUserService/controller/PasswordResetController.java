@@ -1,6 +1,6 @@
 package com.rtb.UrlOnUserService.controller;
 
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.service.EmailService;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
@@ -35,7 +35,7 @@ public class PasswordResetController {
     @PostMapping("/account/forgotPassword")
     public String forgotPasswordFormSubmit(HttpServletRequest request, Model model) {
 
-        UrlOnUser user = userService.getUserByEmailId(request.getParameter("email"));
+        UserAccount user = userService.getUserByEmailId(request.getParameter("email"));
 
         if (user == null) {
 
@@ -67,7 +67,7 @@ public class PasswordResetController {
     @GetMapping("/account/passwordReset")
     public String passwordResetForm(@RequestParam(name = "uid") String uid, @RequestParam("token") String token, Model model) {
 
-        UrlOnUser user = userService.getUserByUid(uid);
+        UserAccount user = userService.getUserByUid(uid);
 
         if (user == null || !JWT_Util.isTokenValid(token) || user.getResetPasswordToken() == null || !user.getResetPasswordToken().equals(token)) {
 
@@ -89,7 +89,7 @@ public class PasswordResetController {
     public String passwordResetFormSubmit(HttpServletRequest request, Model model) {
 
         String token = request.getParameter("token");
-        UrlOnUser user = userService.getUserByResetPasswordToken(token);
+        UserAccount user = userService.getUserByResetPasswordToken(token);
 
         if (user == null || !JWT_Util.isTokenValid(token)) {
 

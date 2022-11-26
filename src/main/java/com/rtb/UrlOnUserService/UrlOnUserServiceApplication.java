@@ -1,7 +1,7 @@
 package com.rtb.UrlOnUserService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -31,12 +31,12 @@ public class UrlOnUserServiceApplication {
         return new ObjectMapper();
     }
 
-    @Bean
+    //@Bean
     CommandLineRunner run(UserRepository userRepository) {
 
         return args -> {
 
-            UrlOnUser user = new UrlOnUser(
+            UserAccount user = new UserAccount(
                     null,
                     "rkumar0206@gmail.com",
                     "rkumar0206",
