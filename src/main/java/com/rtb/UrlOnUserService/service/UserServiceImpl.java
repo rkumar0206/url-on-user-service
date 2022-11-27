@@ -5,6 +5,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UserAccount;
+import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
 import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
@@ -22,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +54,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             throw new UsernameNotFoundException(userNotFoundError);
         } else if (!user.isAccountVerified()) {
-            throw new RuntimeException(accountNotVerifiedError);
+            throw new UserException(accountNotVerifiedError);
         }
 
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -63,6 +65,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserAccount getUserByEmailIdOrByUsername(String username) {
+
+        if (username == null || !StringUtils.hasLength(username.trim())) {
+            throw new UserException("Please enter a valid username.");
+        }
 
         if (Utility.isValidEmailAddress(username)) {
 
@@ -94,7 +100,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             if (!user.getUsername().trim().equals(userCreateRequest.getUsername().trim())) {
 
                 if (userRepository.findByUsername(userCreateRequest.getUsername()).isPresent()) {
-                    throw new RuntimeException(duplicateUsernameError);
+                    throw new UserException(duplicateUsernameError);
                 }
             }
 
@@ -120,12 +126,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             if (userRepository.findByEmailId(user.getEmailId().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateEmailIdError);
+                throw new UserException(duplicateEmailIdError);
             }
 
             if (userRepository.findByUsername(user.getUsername().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateUsernameError);
+                throw new UserException(duplicateUsernameError);
             }
 
             user.setUid(UUID.randomUUID().toString().replace("-", ""));
@@ -153,7 +159,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         if (!userByEmail.isPresent() || !userByUid.isPresent()) {
 
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         } else {
 
             validateUserForUpdate(userByEmail.get(), userByUid.get());
@@ -171,7 +177,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             }
         }
 
-        return userByUid.orElseThrow(() -> new RuntimeException(userNotFoundError));
+        return userByUid.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
     @Override
@@ -181,7 +187,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Optional<UserAccount> userByEmail = userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId());
 
         if (!userByEmail.isPresent() || !userByUid.isPresent()) {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         } else {
 
             validateUserForUpdate(userByEmail.get(), userByUid.get());
@@ -190,7 +196,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             if (userRepository.findByEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateEmailIdError);
+                throw new UserException(duplicateEmailIdError);
             } else {
 
                 log.info("Changing user email id");
@@ -207,7 +213,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 }
             }
         }
-        return userByEmail.orElseThrow(() -> new RuntimeException(userNotFoundError));
+        return userByEmail.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
     @Override
@@ -217,7 +223,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Optional<UserAccount> userByUsername = userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername());
 
         if (!userByUsername.isPresent() || !userByUid.isPresent()) {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         } else {
 
             validateUserForUpdate(userByUsername.get(), userByUid.get());
@@ -226,7 +232,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             if (userRepository.findByUsername(changeUserUsernameRequest.getRequestedUsername().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateUsernameError);
+                throw new UserException(duplicateUsernameError);
             } else {
 
                 userByUsername.get().setUsername(changeUserUsernameRequest.getRequestedUsername().trim());
@@ -235,15 +241,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 log.info("Changed user's username to " + changeUserUsernameRequest.getRequestedUsername());
             }
         }
-        return userByUsername.orElseThrow(() -> new RuntimeException(userNotFoundError));
+        return userByUsername.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
     private void validateUserForUpdate(UserAccount user, UserAccount userByUid) throws RuntimeException {
 
         if (user != userByUid) {
-            throw new RuntimeException(invalidUserAndUIDError);
+            throw new UserException(invalidUserAndUIDError);
         } else if (!user.isAccountVerified()) {
-            throw new RuntimeException(accountNotVerifiedError);
+            throw new UserException(accountNotVerifiedError);
         }
     }
 
@@ -286,7 +292,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setResetPasswordToken(null);
             userRepository.save(user);
         } else {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         }
     }
 
@@ -301,7 +307,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setResetPasswordToken(resetPasswordToken);
             userRepository.save(user);
         } else {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         }
     }
 

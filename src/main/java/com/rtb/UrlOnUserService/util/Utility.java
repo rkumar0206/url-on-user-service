@@ -34,8 +34,12 @@ public class Utility {
 
         whiteListedServletPaths.add("/urlon/app/users/login");
         whiteListedServletPaths.add("/urlon/api/users/token/refresh");
-        whiteListedServletPaths.add("urlon/api/users/account/forgotPassword");
-        whiteListedServletPaths.add("urlon/api/users/account/passwordReset");
+        whiteListedServletPaths.add("/urlon/api/users/create");
+        whiteListedServletPaths.add("/urlon/api/users/account/verify");
+        whiteListedServletPaths.add("/urlon/api/users/account/forgotPassword");
+        whiteListedServletPaths.add("/urlon/api/users/account/passwordReset");
+        whiteListedServletPaths.add("/urlon/api/users/checkEmailExists");
+        whiteListedServletPaths.add("/urlon/api/users/checkUsernameExists");
 
         return whiteListedServletPaths;
 

@@ -44,8 +44,10 @@ public class SecurityConfig {
                             "/urlon/api/users/account/verify",
                             "/urlon/api/users/token/refresh",
                             "/urlon/api/users/account/forgotPassword",
-                            "/urlon/api/users/account/passwordReset"
-                            ).permitAll();
+                            "/urlon/api/users/account/passwordReset",
+                            "/urlon/api/users/checkEmailExists",
+                            "/urlon/api/users/checkUsernameExists"
+                    ).permitAll();
 
                     auth.anyRequest().authenticated();
                 })
