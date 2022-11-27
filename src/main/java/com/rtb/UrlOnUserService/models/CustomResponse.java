@@ -10,13 +10,13 @@ import org.springframework.http.HttpStatus;
 @Getter
 @Setter
 @Builder
-public class CustomResponse {
-    String code;
-    String message;
+public class CustomResponse<T> {
+    String status;
+    T response;
 
     public CustomResponse() {
 
-        this.code = "" + HttpStatus.INTERNAL_SERVER_ERROR.value();
-        this.message = "Something went wrong";
+        this.status = "" + HttpStatus.INTERNAL_SERVER_ERROR.value();
+        this.response = null;
     }
 }

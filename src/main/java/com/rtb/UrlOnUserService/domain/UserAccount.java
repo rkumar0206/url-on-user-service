@@ -1,6 +1,5 @@
 package com.rtb.UrlOnUserService.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -10,17 +9,16 @@ import java.util.Collection;
 import java.util.Date;
 
 @Entity
-@Table(name = "UrlOnUser")
+@Table(name = "user_account")
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class UrlOnUser implements Serializable {
+public class UserAccount implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @JsonIgnore
     private Long id;
 
     @Column(name = "email_id", nullable = false, unique = true, length = 50)
@@ -29,7 +27,6 @@ public class UrlOnUser implements Serializable {
     @Column(name = "username", nullable = false, unique = true, length = 50)
     private String username;
 
-    @JsonIgnore
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
@@ -49,11 +46,9 @@ public class UrlOnUser implements Serializable {
     @Column(name = "dob", nullable = false)
     private Date dob;
 
-    @JsonIgnore
     @Column(name = "is_account_verified")
     private boolean isAccountVerified = false;
 
-    @JsonIgnore
     private String resetPasswordToken;
 
     @ManyToMany(fetch = FetchType.EAGER)

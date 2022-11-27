@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
+import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
 import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
@@ -22,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,13 +48,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        UrlOnUser user = getUserByEmailIdOrByUsername(username);
+        UserAccount user = getUserByEmailIdOrByUsername(username);
 
         if (user == null) {
 
             throw new UsernameNotFoundException(userNotFoundError);
         } else if (!user.isAccountVerified()) {
-            throw new RuntimeException(accountNotVerifiedError);
+            throw new UserException(accountNotVerifiedError);
         }
 
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -62,7 +64,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UrlOnUser getUserByEmailIdOrByUsername(String username) {
+    public UserAccount getUserByEmailIdOrByUsername(String username) {
+
+        if (username == null || !StringUtils.hasLength(username.trim())) {
+            throw new UserException("Please enter a valid username.");
+        }
 
         if (Utility.isValidEmailAddress(username)) {
 
@@ -74,16 +80,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UrlOnUser getUserByResetPasswordToken(String resetPasswordUrl) {
+    public UserAccount getUserByResetPasswordToken(String resetPasswordUrl) {
 
         return userRepository.findByResetPasswordToken(resetPasswordUrl).orElse(null);
     }
 
     @Override
-    public UrlOnUser saveUser(UserCreateRequest userCreateRequest) {
+    public UserAccount saveUser(UserCreateRequest userCreateRequest) {
 
-        UrlOnUser user;
-        Optional<UrlOnUser> tempUser = userRepository.findByEmailId(userCreateRequest.getEmailId());
+        UserAccount user;
+        Optional<UserAccount> tempUser = userRepository.findByEmailId(userCreateRequest.getEmailId());
 
         if (tempUser.isPresent() && !tempUser.get().isAccountVerified()) {
 
@@ -94,7 +100,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             if (!user.getUsername().trim().equals(userCreateRequest.getUsername().trim())) {
 
                 if (userRepository.findByUsername(userCreateRequest.getUsername()).isPresent()) {
-                    throw new RuntimeException(duplicateUsernameError);
+                    throw new UserException(duplicateUsernameError);
                 }
             }
 
@@ -116,16 +122,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             log.info("Confirmation token sent");
         } else {
 
-            user = objectMapper.convertValue(userCreateRequest, UrlOnUser.class);
+            user = objectMapper.convertValue(userCreateRequest, UserAccount.class);
 
             if (userRepository.findByEmailId(user.getEmailId().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateEmailIdError);
+                throw new UserException(duplicateEmailIdError);
             }
 
             if (userRepository.findByUsername(user.getUsername().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateUsernameError);
+                throw new UserException(duplicateUsernameError);
             }
 
             user.setUid(UUID.randomUUID().toString().replace("-", ""));
@@ -146,14 +152,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UrlOnUser updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest) {
+    public UserAccount updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest) {
 
-        Optional<UrlOnUser> userByUid = userRepository.findByUid(updateUserDetailsRequest.getUid());
-        Optional<UrlOnUser> userByEmail = userRepository.findByEmailId(updateUserDetailsRequest.getEmailId());
+        Optional<UserAccount> userByUid = userRepository.findByUid(updateUserDetailsRequest.getUid());
+        Optional<UserAccount> userByEmail = userRepository.findByEmailId(updateUserDetailsRequest.getEmailId());
 
         if (!userByEmail.isPresent() || !userByUid.isPresent()) {
 
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         } else {
 
             validateUserForUpdate(userByEmail.get(), userByUid.get());
@@ -171,17 +177,17 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             }
         }
 
-        return userByUid.orElseThrow(() -> new RuntimeException(userNotFoundError));
+        return userByUid.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
     @Override
-    public UrlOnUser changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest) {
+    public UserAccount changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest) {
 
-        Optional<UrlOnUser> userByUid = userRepository.findByUid(changeUserEmailIdRequest.getUid());
-        Optional<UrlOnUser> userByEmail = userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId());
+        Optional<UserAccount> userByUid = userRepository.findByUid(changeUserEmailIdRequest.getUid());
+        Optional<UserAccount> userByEmail = userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId());
 
         if (!userByEmail.isPresent() || !userByUid.isPresent()) {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         } else {
 
             validateUserForUpdate(userByEmail.get(), userByUid.get());
@@ -190,7 +196,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             if (userRepository.findByEmailId(changeUserEmailIdRequest.getRequestedEmailId().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateEmailIdError);
+                throw new UserException(duplicateEmailIdError);
             } else {
 
                 log.info("Changing user email id");
@@ -207,17 +213,17 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 }
             }
         }
-        return userByEmail.orElseThrow(() -> new RuntimeException(userNotFoundError));
+        return userByEmail.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
     @Override
-    public UrlOnUser changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest) {
+    public UserAccount changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest) {
 
-        Optional<UrlOnUser> userByUid = userRepository.findByUid(changeUserUsernameRequest.getUid());
-        Optional<UrlOnUser> userByUsername = userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername());
+        Optional<UserAccount> userByUid = userRepository.findByUid(changeUserUsernameRequest.getUid());
+        Optional<UserAccount> userByUsername = userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername());
 
         if (!userByUsername.isPresent() || !userByUid.isPresent()) {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         } else {
 
             validateUserForUpdate(userByUsername.get(), userByUid.get());
@@ -226,7 +232,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             if (userRepository.findByUsername(changeUserUsernameRequest.getRequestedUsername().trim()).isPresent()) {
 
-                throw new RuntimeException(duplicateUsernameError);
+                throw new UserException(duplicateUsernameError);
             } else {
 
                 userByUsername.get().setUsername(changeUserUsernameRequest.getRequestedUsername().trim());
@@ -235,15 +241,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 log.info("Changed user's username to " + changeUserUsernameRequest.getRequestedUsername());
             }
         }
-        return userByUsername.orElseThrow(() -> new RuntimeException(userNotFoundError));
+        return userByUsername.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
-    private void validateUserForUpdate(UrlOnUser user, UrlOnUser userByUid) throws RuntimeException {
+    private void validateUserForUpdate(UserAccount user, UserAccount userByUid) throws RuntimeException {
 
         if (user != userByUid) {
-            throw new RuntimeException(invalidUserAndUIDError);
+            throw new UserException(invalidUserAndUIDError);
         } else if (!user.isAccountVerified()) {
-            throw new RuntimeException(accountNotVerifiedError);
+            throw new UserException(accountNotVerifiedError);
         }
     }
 
@@ -254,7 +260,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         if (confirmationToken.isPresent()) {
 
-            Optional<UrlOnUser> user = userRepository.findByEmailId(confirmationToken.get().getUserEmailId());
+            Optional<UserAccount> user = userRepository.findByEmailId(confirmationToken.get().getUserEmailId());
 
             if (user.isPresent()) {
 
@@ -279,21 +285,21 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void updateUserPassword(String uid, String password) throws RuntimeException {
 
-        UrlOnUser user = getUserByUid(uid);
+        UserAccount user = getUserByUid(uid);
 
         if (user != null) {
             user.setPassword(bCryptPasswordEncoder.encode(password));
             user.setResetPasswordToken(null);
             userRepository.save(user);
         } else {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         }
     }
 
     @Override
     public void updateUserResetPasswordToken(String uid, String resetPasswordToken) throws RuntimeException {
 
-        UrlOnUser user = getUserByUid(uid);
+        UserAccount user = getUserByUid(uid);
 
         if (user != null) {
 
@@ -301,34 +307,34 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setResetPasswordToken(resetPasswordToken);
             userRepository.save(user);
         } else {
-            throw new RuntimeException(userNotFoundError);
+            throw new UserException(userNotFoundError);
         }
     }
 
     @Override
-    public void addRoleToTheUser(UrlOnUser user, String roleName) {
+    public void addRoleToTheUser(UserAccount user, String roleName) {
 
         Optional<Role> role = roleRepository.findByRoleName(roleName);
         role.ifPresent(value -> user.getRoles().add(value));
     }
 
     @Override
-    public UrlOnUser getUserByUserName(String username) {
+    public UserAccount getUserByUserName(String username) {
 
-        Optional<UrlOnUser> user = userRepository.findByUsername(username);
+        Optional<UserAccount> user = userRepository.findByUsername(username);
         return user.orElse(null);
     }
 
     @Override
-    public UrlOnUser getUserByEmailId(String emailId) {
+    public UserAccount getUserByEmailId(String emailId) {
 
-        Optional<UrlOnUser> user = userRepository.findByEmailId(emailId);
+        Optional<UserAccount> user = userRepository.findByEmailId(emailId);
         return user.orElse(null);
     }
 
     @Override
-    public UrlOnUser getUserByUid(String uid) {
-        Optional<UrlOnUser> user = userRepository.findByUid(uid);
+    public UserAccount getUserByUid(String uid) {
+        Optional<UserAccount> user = userRepository.findByUid(uid);
         return user.orElse(null);
     }
 

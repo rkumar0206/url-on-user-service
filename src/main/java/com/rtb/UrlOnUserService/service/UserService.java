@@ -1,7 +1,7 @@
 package com.rtb.UrlOnUserService.service;
 
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
 import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
@@ -9,25 +9,25 @@ import com.rtb.UrlOnUserService.models.UserCreateRequest;
 
 public interface UserService {
 
-    UrlOnUser saveUser(UserCreateRequest userCreateRequest);
+    UserAccount saveUser(UserCreateRequest userCreateRequest);
 
-    UrlOnUser updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest);
+    UserAccount updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest);
 
-    UrlOnUser changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest);
+    UserAccount changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest);
 
-    UrlOnUser changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest);
+    UserAccount changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest);
 
-    void addRoleToTheUser(UrlOnUser user, String roleName);
+    void addRoleToTheUser(UserAccount user, String roleName);
 
-    UrlOnUser getUserByUserName(String username);
+    UserAccount getUserByUserName(String username);
 
-    UrlOnUser getUserByEmailId(String emailId);
+    UserAccount getUserByEmailId(String emailId);
 
-    UrlOnUser getUserByUid(String uid);
+    UserAccount getUserByUid(String uid);
 
-    UrlOnUser getUserByEmailIdOrByUsername(String username);
+    UserAccount getUserByEmailIdOrByUsername(String username);
 
-    UrlOnUser getUserByResetPasswordToken(String resetPasswordUrl);
+    UserAccount getUserByResetPasswordToken(String resetPasswordUrl);
 
     AccountVerificationMessage verifyAccount(String token);
 

@@ -1,7 +1,7 @@
 package com.rtb.UrlOnUserService.service;
 
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
-import com.rtb.UrlOnUserService.domain.UrlOnUser;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,13 +31,13 @@ class EmailServiceImplTest {
     @Mock
     private HttpServletRequest request;
 
-    private UrlOnUser user;
+    private UserAccount user;
     private EmailServiceImpl emailService;
 
     @BeforeEach
     void setUp() {
 
-        user = new UrlOnUser(
+        user = new UserAccount(
                 null,
                 "test123@examplertb.test",
                 "test0206",

@@ -5,5 +5,5 @@ spring:
     import: optional:configserver:http://localhost:8003/
 
 server:
-  port: 8001
+  port: 0
 
