@@ -3,7 +3,7 @@ package com.rtb.UrlOnUserService.constantsAndEnums;
 public class ErrorMessage {
 
     public static final String userNotFoundError = "User not found in the database";
-    public static final String accountNotVerifiedError = "Account not verified";
+    public static final String accountNotVerifiedError = "This account is not verified";
     public static final String accountNotVerifiedError_forgotPassword = "This account is not verified. Please try signing-up using the same email id";
     public static final String duplicateEmailIdError = "User with this email id is already present. Please enter other email address";
     public static final String duplicateUsernameError = "This username is not available. Please try other username";
