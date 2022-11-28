@@ -311,18 +311,18 @@ public class UserController {
                 DecodedJWT decodedJWT = jwtVerifier.verify(token);
 
                 String username = decodedJWT.getSubject();
-                UserAccount appUser = userService.getUserByEmailIdOrByUsername(username);
+                UserAccount userAccount = userService.getUserByEmailIdOrByUsername(username);
 
-                if (appUser != null && appUser.isAccountVerified()) {
+                if (userAccount != null && userAccount.isAccountVerified()) {
 
                     Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                    appUser.getRoles().stream().map(Role::getRoleName)
+                    userAccount.getRoles().stream().map(Role::getRoleName)
                             .forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
 
-                    User user = new User(appUser.getUsername(), "", authorities);
+                    User user = new User(userAccount.getUsername(), "", authorities);
 
                     Map<String, String> tokens = new HashMap<>();
-                    tokens.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(user));
+                    tokens.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(user, userAccount));
                     tokens.put(REFRESH_TOKEN, token);
 
                     response.setContentType(APPLICATION_JSON_VALUE);

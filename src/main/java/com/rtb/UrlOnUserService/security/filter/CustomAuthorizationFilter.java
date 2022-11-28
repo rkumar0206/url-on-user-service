@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -60,6 +61,11 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
                     // token is valid
                     String username = decodedJWT.getSubject();
                     String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
+                    String uid = decodedJWT.getClaim("uid").asString();
+                    String keyId = decodedJWT.getKeyId();
+
+                    if (!StringUtils.hasLength(uid) || !StringUtils.hasLength(keyId))
+                        throw new RuntimeException("Token invalid");
 
                     Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
                     stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
