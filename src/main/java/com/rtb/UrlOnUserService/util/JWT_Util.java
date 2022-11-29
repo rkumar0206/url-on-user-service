@@ -6,19 +6,18 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
+import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
+
+import static java.util.Arrays.stream;
 
 @Component
 public class JWT_Util {
@@ -47,10 +46,10 @@ public class JWT_Util {
     public static String generateAccessToken(User user) {
 
         UserAccount userAccount = userService.getUserByUserName(user.getUsername());
-        return generateAccessToken(user, userAccount);
+        return generateAccessToken(userAccount);
     }
 
-    public static String generateAccessToken(User user, UserAccount userAccount) {
+    public static String generateAccessToken(UserAccount userAccount) {
 
         long expiry = System.currentTimeMillis() + Constants.ONE_DAY_MILLISECONDS * access_token_expiration_time_day;
         //long expiry = System.currentTimeMillis() + 2 * 60 * 1000;
@@ -59,13 +58,17 @@ public class JWT_Util {
         userInfo.put("firstName", userAccount.getFirstName());
         userInfo.put("lastName", userAccount.getLastName());
 
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        String[] roles = userAccount.getRoles().stream().map(Role::getRoleName).toArray(String[]::new);
+        stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+
         return JWT.create()
-                .withSubject(user.getUsername())
+                .withSubject(userAccount.getUsername())
                 .withIssuedAt(new Date(System.currentTimeMillis()))
                 .withKeyId(UUID.randomUUID().toString())
                 .withExpiresAt(new Date(expiry))
                 .withIssuer(issuer)
-                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+                .withClaim("roles", authorities)
                 .withClaim("uid", userAccount.getUid())
                 .withPayload(userInfo)
                 .sign(algorithm);
@@ -73,21 +76,27 @@ public class JWT_Util {
 
     public static String generateRefreshToken(User user) {
 
+        UserAccount userAccount = userService.getUserByUserName(user.getUsername());
+        return generateRefreshToken(userAccount);
+    }
+
+    public static String generateRefreshToken(UserAccount userAccount) {
+
         long expiry = System.currentTimeMillis() + (Constants.ONE_DAY_MILLISECONDS * refresh_token_expiration_time_day);
         //long expiry = System.currentTimeMillis() + 4 * 60 * 1000;
-        UserAccount userAccount = userService.getUserByUserName(user.getUsername());
+
         Map<String, String> userInfo = new HashMap<>();
         userInfo.put("firstName", userAccount.getFirstName());
         userInfo.put("lastName", userAccount.getLastName());
 
-        return JWT.create().withSubject(user.getUsername())
+        return JWT.create().withSubject(userAccount.getUsername())
                 .withExpiresAt(new Date(expiry))
                 .withIssuedAt(new Date(System.currentTimeMillis()))
                 .withIssuer(issuer)
                 .withPayload(userInfo)
                 .sign(algorithm);
-
     }
+
 
     public static String generateTokenWithExpiry(String subject, long expiryTimeInMillis) {
 

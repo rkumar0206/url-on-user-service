@@ -7,8 +7,8 @@ public class Constants {
     public static final String PASSWORD_RESET_EMAIL_SUBJECT = "Password reset for UrlOn application";
     public static final Long ONE_DAY_MILLISECONDS = 86400000L;
     public static final String BEARER = "Bearer ";
-    public static final String ACCESS_TOKEN = "access_token ";
-    public static final String REFRESH_TOKEN = "refresh_token ";
+    public static final String ACCESS_TOKEN = "access_token";
+    public static final String REFRESH_TOKEN = "refresh_token";
     public static final String MESSAGE = "message";
     public static final String ERROR = "error";
     public static final String PASSWORD_RESET_SUCCESSFUL = "Password reset successful";
