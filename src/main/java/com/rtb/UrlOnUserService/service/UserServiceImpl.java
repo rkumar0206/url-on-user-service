@@ -16,7 +16,9 @@ import com.rtb.UrlOnUserService.repository.UserRepository;
 import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -155,14 +157,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public UserAccount updateUserDetails(UpdateUserDetailsRequest updateUserDetailsRequest) {
 
         Optional<UserAccount> userByUid = userRepository.findByUid(updateUserDetailsRequest.getUid());
-        Optional<UserAccount> userByEmail = userRepository.findByEmailId(updateUserDetailsRequest.getEmailId());
 
-        if (!userByEmail.isPresent() || !userByUid.isPresent()) {
+        if (!userByUid.isPresent()) {
 
             throw new UserException(userNotFoundError);
         } else {
 
-            validateUserForUpdate(userByEmail.get(), userByUid.get());
+            validateUserForUpdate(userByUid.get());
 
             userByUid.get().setFirstName(updateUserDetailsRequest.getFirstName());
             userByUid.get().setLastName(updateUserDetailsRequest.getLastName());
@@ -190,7 +191,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             throw new UserException(userNotFoundError);
         } else {
 
-            validateUserForUpdate(userByEmail.get(), userByUid.get());
+            validateUserForUpdate(userByEmail.get());
 
             log.info("User is valid for updating the details.");
 
@@ -226,7 +227,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             throw new UserException(userNotFoundError);
         } else {
 
-            validateUserForUpdate(userByUsername.get(), userByUid.get());
+            validateUserForUpdate(userByUsername.get());
 
             log.info("User is valid for updating the details.");
 
@@ -244,13 +245,18 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return userByUsername.orElseThrow(() -> new UserException(userNotFoundError));
     }
 
-    private void validateUserForUpdate(UserAccount user, UserAccount userByUid) throws RuntimeException {
+    private void validateUserForUpdate(UserAccount userAccount) throws RuntimeException {
 
-        if (user != userByUid) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (!authentication.isAuthenticated())
+            throw new UserException("User is not authenticated");
+
+        if (!authentication.getPrincipal().equals(userAccount.getUsername()))
             throw new UserException(invalidUserAndUIDError);
-        } else if (!user.isAccountVerified()) {
+
+        if (!userAccount.isAccountVerified())
             throw new UserException(accountNotVerifiedError);
-        }
     }
 
     @Override

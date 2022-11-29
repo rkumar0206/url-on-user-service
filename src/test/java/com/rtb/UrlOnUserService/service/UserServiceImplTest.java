@@ -5,6 +5,9 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UserAccount;
+import com.rtb.UrlOnUserService.exceptions.UserException;
+import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
+import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -15,17 +18,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
+import static java.util.Arrays.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,7 +44,6 @@ import static org.mockito.Mockito.*;
 class UserServiceImplTest {
 
     private static UserAccount user;
-    private UserServiceImpl userService;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -48,7 +54,7 @@ class UserServiceImplTest {
     private EmailService emailService;
     @Mock
     private BCryptPasswordEncoder bCryptPasswordEncoder;
-    private ObjectMapper objectMapper;
+    private UserServiceImpl userService;
 
     @BeforeEach
     void setUp() {
@@ -69,9 +75,23 @@ class UserServiceImplTest {
                 new ArrayList<>()
         );
 
-        objectMapper = new ObjectMapper();
-        userService = new UserServiceImpl(userRepository, roleRepository, confirmationTokenRepository, emailService, objectMapper, bCryptPasswordEncoder);
+        userService = new UserServiceImpl(userRepository, roleRepository, confirmationTokenRepository, emailService, new ObjectMapper(), bCryptPasswordEncoder);
     }
+
+    private void mockSecurityContextHolder() {
+
+        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        String[] roles = user.getRoles().stream().map(Role::getRoleName).toArray(String[]::new);
+        stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getUsername(),
+                user.getPassword(),
+                authorities);
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
+
 
     @Test
     void loadUserByUsername_searchByUsername_user_not_null() {
@@ -232,7 +252,7 @@ class UserServiceImplTest {
 
         user.setAccountVerified(false);
 
-        UserAccount user2 = objectMapper.convertValue(user, UserAccount.class);
+        UserAccount user2 = new ObjectMapper().convertValue(user, UserAccount.class);
 
         when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
         when(userRepository.findByUsername(userCreateRequest.getUsername())).thenReturn(Optional.of(user2));
@@ -360,7 +380,8 @@ class UserServiceImplTest {
                 .build();
 
         when(userRepository.findByUid(user.getUid())).thenReturn(Optional.of(user));
-        when(userRepository.findByEmailId(user.getEmailId())).thenReturn(Optional.of(user));
+
+        mockSecurityContextHolder();
 
         userService.updateUserDetails(updateUserDetailsRequest);
 
@@ -384,9 +405,7 @@ class UserServiceImplTest {
                 .phoneNumber("1234456789")
                 .build();
 
-
         when(userRepository.findByUid(anyString())).thenReturn(Optional.empty());
-        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.updateUserDetails(updateUserDetailsRequest))
                 .isInstanceOf(RuntimeException.class)
@@ -395,35 +414,21 @@ class UserServiceImplTest {
 
 
     @Test
-    void updateUserDetails_UserWithUIDAndEmailIsDifferent_exceptionIsThrown() {
+    void updateUserDetails_UsernameMismatch_exceptionIsThrown() {
 
-        UserAccount user2 = new UserAccount(
-                null,
-                "test456@example.com",
-                "test0207",
-                "test2@password",
-                "rrrrr",
-                "TestFirstName2",
-                "TestLastName2",
-                null,
-                null,
-                new Date(),
-                true,
-                null,
-                new ArrayList<>()
-        );
+        UserAccount user2 = new ObjectMapper().convertValue(user, UserAccount.class);
+        user.setUsername("Different_username");
 
         UpdateUserDetailsRequest updateUserDetailsRequest = UpdateUserDetailsRequest.builder()
-                .emailId(user2.getEmailId())
+                .emailId(user.getEmailId())
                 .uid(user.getUid())
                 .firstName("FnameUpdated")
                 .dob(new Date())
                 .phoneNumber("1234456789")
                 .build();
 
-
-        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user2));
+        mockSecurityContextHolder();
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(user2));
 
         assertThatThrownBy(() -> userService.updateUserDetails(updateUserDetailsRequest))
                 .isInstanceOf(RuntimeException.class)
@@ -443,12 +448,105 @@ class UserServiceImplTest {
                 .phoneNumber("1234456789")
                 .build();
 
-
+        mockSecurityContextHolder();
         when(userRepository.findByUid(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.findByEmailId(anyString())).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.updateUserDetails(updateUserDetailsRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(accountNotVerifiedError);
     }
+
+    @Test
+    void changeUserEmailId_Success() throws Exception {
+
+        ChangeUserEmailIdRequest changeUserEmailIdRequest = ChangeUserEmailIdRequest.builder()
+                .requestedEmailId("newEmailId.example.com")
+                .previousEmailId(user.getEmailId())
+                .uid(user.getUid())
+                .build();
+
+        when(userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailId(changeUserEmailIdRequest.getRequestedEmailId())).thenReturn(Optional.empty());
+        when(userRepository.findByUid(changeUserEmailIdRequest.getUid())).thenReturn(Optional.of(user));
+
+        mockSecurityContextHolder();
+
+        userService.changeUserEmailId(changeUserEmailIdRequest);
+
+        ArgumentCaptor<UserAccount> userArgumentCaptor = ArgumentCaptor.forClass(UserAccount.class);
+
+        verify(userRepository).save(userArgumentCaptor.capture());
+        verify(emailService, times(1)).sendConfirmationToken(any());
+
+        UserAccount capturedUser = userArgumentCaptor.getValue();
+
+        assertThat(capturedUser.getEmailId()).isEqualTo(changeUserEmailIdRequest.getRequestedEmailId());
+    }
+
+    @Test
+    void changeUserEmailId_EmailIdAlreadyPresent_exceptionThrown() {
+
+        ChangeUserEmailIdRequest changeUserEmailIdRequest = ChangeUserEmailIdRequest.builder()
+                .requestedEmailId("newEmailId.example.com")
+                .previousEmailId(user.getEmailId())
+                .uid(user.getUid())
+                .build();
+
+        when(userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailId(changeUserEmailIdRequest.getRequestedEmailId())).thenReturn(Optional.of(new UserAccount()));
+        when(userRepository.findByUid(changeUserEmailIdRequest.getUid())).thenReturn(Optional.of(user));
+
+        mockSecurityContextHolder();
+
+        assertThatThrownBy(() -> userService.changeUserEmailId(changeUserEmailIdRequest))
+                .isInstanceOf(UserException.class)
+                .hasMessageContaining(duplicateEmailIdError);
+
+    }
+
+    @Test
+    void changeUserUsername_Success() throws Exception {
+
+        ChangeUserUsernameRequest changeUserUsernameRequest = ChangeUserUsernameRequest.builder()
+                .requestedUsername("New_username")
+                .previousUsername(user.getUsername())
+                .uid(user.getUid())
+                .build();
+
+        when(userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername(changeUserUsernameRequest.getRequestedUsername())).thenReturn(Optional.empty());
+        when(userRepository.findByUid(changeUserUsernameRequest.getUid())).thenReturn(Optional.of(user));
+
+        mockSecurityContextHolder();
+
+        userService.changeUserUsername(changeUserUsernameRequest);
+
+        ArgumentCaptor<UserAccount> userArgumentCaptor = ArgumentCaptor.forClass(UserAccount.class);
+
+        verify(userRepository).save(userArgumentCaptor.capture());
+        UserAccount capturedUser = userArgumentCaptor.getValue();
+        assertThat(capturedUser.getUsername()).isEqualTo(changeUserUsernameRequest.getRequestedUsername());
+    }
+
+    @Test
+    void changeUserUsername_UsernameAlreadyPresent_exceptionThrown() {
+
+        ChangeUserUsernameRequest changeUserUsernameRequest = ChangeUserUsernameRequest.builder()
+                .requestedUsername("New_username")
+                .previousUsername(user.getUsername())
+                .uid(user.getUid())
+                .build();
+
+        when(userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername(changeUserUsernameRequest.getRequestedUsername())).thenReturn(Optional.of(new UserAccount()));
+        when(userRepository.findByUid(changeUserUsernameRequest.getUid())).thenReturn(Optional.of(user));
+
+        mockSecurityContextHolder();
+
+        assertThatThrownBy(() -> userService.changeUserUsername(changeUserUsernameRequest))
+                .isInstanceOf(UserException.class)
+                .hasMessageContaining(duplicateUsernameError);
+
+    }
+
 }

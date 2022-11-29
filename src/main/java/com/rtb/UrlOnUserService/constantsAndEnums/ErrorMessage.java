@@ -14,6 +14,6 @@ public class ErrorMessage {
     public static final String invalidUserDetailsForUpdateError = "User details invalid!!. email, uid, firstName and dob is mandatory.";
     public static final String invalidDetailsFoundForChangingEmailIDError = "Invalid details received for changing user email id!!. Please send the previousEmailId, requestedEmailId and uid";
     public static final String invalidDetailsFoundForChangingUsernameError = "Invalid details received for changing user username!!. Please send the previousUsername, requestedUsername, emailId and uid";
-    public static final String invalidUserAndUIDError = "Two different users found for the given username/emailId and UID!!";
+    public static final String invalidUserAndUIDError = "You cannot make changes to this account";
 
 }
