@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -213,6 +215,32 @@ public class UserController {
 
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
     }
+
+    @GetMapping("/myDetails")
+    public ResponseEntity<CustomResponse> getAuthenticatedUserDetails() {
+
+        try {
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserAccount user = userService.getUserByUserName(authentication.getPrincipal().toString());
+
+            if (user == null) return ResponseEntity.noContent().build();
+            if (!user.isAccountVerified()) throw new UserException(accountNotVerifiedError);
+            return new ResponseEntity<>(buildCustomResponseWithUserDetails(user), HttpStatus.OK);
+
+        } catch (Exception e) {
+
+            CustomResponse<String> customResponse = new CustomResponse<>();
+            if (e instanceof UserException) {
+                customResponse.setStatus("" + HttpStatus.UNAUTHORIZED.value());
+            } else {
+                customResponse.setStatus("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+            }
+            customResponse.setResponse(e.getMessage());
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getStatus())));
+        }
+    }
+
 
     @GetMapping("/detail/uid")
     public ResponseEntity<CustomResponse> getUserDetailsByUid(@RequestParam("uid") String uid) {

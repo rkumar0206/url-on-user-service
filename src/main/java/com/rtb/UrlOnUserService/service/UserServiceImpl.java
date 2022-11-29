@@ -252,7 +252,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (!authentication.isAuthenticated())
             throw new UserException("User is not authenticated");
 
-        if (!authentication.getPrincipal().equals(userAccount.getUsername()))
+        if (!authentication.getPrincipal().toString().equals(userAccount.getUsername()))
             throw new UserException(invalidUserAndUIDError);
 
         if (!userAccount.isAccountVerified())
