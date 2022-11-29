@@ -7,7 +7,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
-import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.*;
@@ -19,15 +18,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -143,32 +139,38 @@ public class UserController {
     }
 
     @PutMapping("/update/username")
-    public ResponseEntity<CustomResponse<String>> changeUserUsername(@RequestBody ChangeUserUsernameRequest changeUserUsernameRequest) {
+    public ResponseEntity<CustomResponse<Map<String, String>>> changeUserUsername(@RequestBody ChangeUserUsernameRequest changeUserUsernameRequest) {
 
-        CustomResponse<String> response = new CustomResponse<>();
+        CustomResponse<Map<String, String>> response = new CustomResponse<>();
+        Map<String, String> returnDetails = new HashMap<>();
 
         if (changeUserUsernameRequest.isRequestValid()) {
 
             try {
-                userService.changeUserUsername(changeUserUsernameRequest);
+                // success
+                UserAccount userAccount = userService.changeUserUsername(changeUserUsernameRequest);
 
-                response.setResponse(USER_USERNAME_UPDATED_SUCCESSFULLY);
+                returnDetails.put("message", USER_USERNAME_UPDATED_SUCCESSFULLY);
+                returnDetails.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(userAccount));  // new access token
+                returnDetails.put(REFRESH_TOKEN, JWT_Util.generateRefreshToken(userAccount)); // new refresh token
+
                 response.setStatus("" + HttpStatus.OK.value());
-
                 log.info(USER_USERNAME_UPDATED_SUCCESSFULLY);
 
             } catch (RuntimeException exception) {
 
-                response.setResponse(exception.getMessage());
+                log.error(exception.getMessage());
+                returnDetails.put("message", exception.getMessage());
                 response.setStatus("" + HttpStatus.BAD_REQUEST.value());
             }
         } else {
 
-            response.setResponse(invalidDetailsFoundForChangingUsernameError);
+            returnDetails.put("message", invalidDetailsFoundForChangingUsernameError);
             response.setStatus("" + HttpStatus.BAD_REQUEST.value());
             log.error(invalidDetailsFoundForChangingUsernameError);
         }
 
+        response.setResponse(returnDetails);
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
     }
 
@@ -296,7 +298,7 @@ public class UserController {
     }
 
     @GetMapping("/token/refresh")
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response, @RequestParam("uid") String uid) throws IOException {
 
         String authorizationHeader = request.getHeader(AUTHORIZATION);
 
@@ -313,23 +315,22 @@ public class UserController {
                 String username = decodedJWT.getSubject();
                 UserAccount userAccount = userService.getUserByEmailIdOrByUsername(username);
 
-                if (userAccount != null && userAccount.isAccountVerified()) {
+                if (userAccount == null)
+                    throw new RemoteException(userNotFoundError);
 
-                    Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                    userAccount.getRoles().stream().map(Role::getRoleName)
-                            .forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
-
-                    User user = new User(userAccount.getUsername(), "", authorities);
-
-                    Map<String, String> tokens = new HashMap<>();
-                    tokens.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(user, userAccount));
-                    tokens.put(REFRESH_TOKEN, token);
-
-                    response.setContentType(APPLICATION_JSON_VALUE);
-                    new ObjectMapper().writeValue(response.getOutputStream(), tokens);
-                } else {
-                    throw new RuntimeException("Invalid user");
+                if (!userAccount.getUid().equals(uid)) {
+                    throw new RuntimeException("Permission denied");
                 }
+
+                if (!userAccount.isAccountVerified())
+                    throw new RuntimeException(accountNotVerifiedError);
+
+                Map<String, String> tokens = new HashMap<>();
+                tokens.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(userAccount));
+                tokens.put(REFRESH_TOKEN, token);
+
+                response.setContentType(APPLICATION_JSON_VALUE);
+                new ObjectMapper().writeValue(response.getOutputStream(), tokens);
 
             } catch (Exception e) {
 
@@ -339,7 +340,7 @@ public class UserController {
                 response.setStatus(FORBIDDEN.value());
 
                 Map<String, String> error = new HashMap<>();
-                error.put("error", e.getMessage());
+                error.put(ERROR, e.getMessage());
 
                 response.setContentType(APPLICATION_JSON_VALUE);
                 new ObjectMapper().writeValue(response.getOutputStream(), error);
@@ -348,7 +349,6 @@ public class UserController {
         } else {
             throw new RuntimeException(refreshTokenMissingError);
         }
-
     }
 
     private CustomResponse<UserDetailResponse> buildCustomResponseWithUserDetails(UserAccount user) {
