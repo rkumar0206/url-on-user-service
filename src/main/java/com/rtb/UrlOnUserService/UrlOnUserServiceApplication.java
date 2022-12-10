@@ -1,11 +1,7 @@
 package com.rtb.UrlOnUserService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rtb.UrlOnUserService.domain.Follower;
-import com.rtb.UrlOnUserService.domain.Role;
-import com.rtb.UrlOnUserService.domain.RoleNames;
 import com.rtb.UrlOnUserService.domain.UserAccount;
-import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -14,9 +10,7 @@ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @SpringBootApplication
 @EnableEurekaClient
@@ -37,14 +31,12 @@ public class UrlOnUserServiceApplication {
     }
 
     //@Bean
-    CommandLineRunner run(UserRepository userRepository, RoleRepository roleRepository) {
+    CommandLineRunner run(UserRepository userRepository) {
 
         return args -> {
 
-            Role role = new Role(null, RoleNames.ADMIN);
-            roleRepository.save(role);
-
             UserAccount user = new UserAccount(
+                    null,
                     "rkumar0206@gmail.com",
                     "rkumar0206",
                     getPasswordEncoder().encode("rohit"),
@@ -55,38 +47,37 @@ public class UrlOnUserServiceApplication {
                     null,
                     new Date(),
                     true,
-                    null
+                    null,
+                    new ArrayList<>()
             );
-
-            user.getRoles().add(role);
 
             userRepository.save(user);
 
             List<String> userIds = Arrays.asList("rk0001", "rk0002", "rk0003", "rk0004", "rk0005");
 
-            for (int i = 0; i < userIds.size(); i++) {
+            userIds.forEach(uid -> {
+
+                int k = new Random().nextInt(100);
 
                 UserAccount userTemp = new UserAccount(
-                        "user" + (i + 1) + "@gmail.com",
-                        "rkumar020" + (i + 1),
+                        null,
+                        "user" + k + "@gmail.com",
+                        Long.toHexString(new Random().nextLong()),
                         getPasswordEncoder().encode("rohit"),
-                        userIds.get(i),
-                        "User" + (i + 1),
+                        uid,
+                        "User" + k,
                         "lastName",
                         null,
                         null,
                         new Date(),
                         true,
-                        null
+                        null,
+                        new ArrayList<>()
                 );
 
-                userTemp.getFollowers()
-                        .add(new Follower(i == 0 ? userIds.get(i + 1) : userIds.get(i - 1), System.currentTimeMillis()));
-
-                if (i % 2 == 0) userTemp.getFollowers().add(new Follower(user.getUid(), System.currentTimeMillis()));
-
                 userRepository.save(userTemp);
-            }
+            });
+
         };
     }
 }

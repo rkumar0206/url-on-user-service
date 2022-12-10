@@ -4,19 +4,21 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
 @Entity
 @Table(name = "user_account")
 @Getter
 @Setter
 @ToString
-@Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class UserAccount implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(name = "email_id", nullable = false, unique = true, length = 50)
@@ -45,52 +47,10 @@ public class UserAccount implements Serializable {
     private Date dob;
 
     @Column(name = "is_account_verified")
-    @Builder.Default
     private boolean isAccountVerified = false;
 
     private String resetPasswordToken;
 
-    @OneToMany(cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private Set<Follower> followers;
-
     @ManyToMany(fetch = FetchType.EAGER)
-    private Collection<Role> roles;
-
-    private UserAccount() {
-        this.followers = new HashSet<>();
-        this.roles = new ArrayList<>();
-    }
-
-    public UserAccount(String emailId, String username, String password, String uid, String firstName, String lastName, String profileImage, String phoneNumber, Date dob, boolean isAccountVerified, String resetPasswordToken, Collection<Role> roles) {
-        this();
-        this.emailId = emailId;
-        this.username = username;
-        this.password = password;
-        this.uid = uid;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.profileImage = profileImage;
-        this.phoneNumber = phoneNumber;
-        this.dob = dob;
-        this.isAccountVerified = isAccountVerified;
-        this.resetPasswordToken = resetPasswordToken;
-        this.roles = roles;
-    }
-
-    public UserAccount(String emailId, String username, String password, String uid, String firstName, String lastName, String profileImage, String phoneNumber, Date dob, boolean isAccountVerified, String resetPasswordToken) {
-        this();
-        this.emailId = emailId;
-        this.username = username;
-        this.password = password;
-        this.uid = uid;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.profileImage = profileImage;
-        this.phoneNumber = phoneNumber;
-        this.dob = dob;
-        this.isAccountVerified = isAccountVerified;
-        this.resetPasswordToken = resetPasswordToken;
-    }
-
+    private Collection<Role> roles = new ArrayList<>();
 }
