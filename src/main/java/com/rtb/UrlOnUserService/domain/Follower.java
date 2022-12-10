@@ -5,17 +5,24 @@ import lombok.*;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "user_role")
+@Table(name = "follower")
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Role {
+@Builder
+public class Follower {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Enumerated(EnumType.STRING)
-    private RoleNames roleName;
+    private String uid;
+    private Long followedOn;
+
+    public Follower(String uid, Long followedOn) {
+        this.uid = uid;
+        this.followedOn = followedOn;
+    }
+
 }

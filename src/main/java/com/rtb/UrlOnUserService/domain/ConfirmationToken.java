@@ -16,9 +16,9 @@ import java.util.UUID;
 public class ConfirmationToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "token_id")
-    private long tokenId;
+    private Long tokenId;
 
     @Column(name = "confirmation_token", unique = true, nullable = false)
     private String confirmationToken;
