@@ -24,4 +24,16 @@ public class Follower {
 
     @Column(name = "followed_on", nullable = false)
     private Long followedOn;
+
+    public Follower(String userUid, String followerUid, Long followedOn) {
+        this.userUid = userUid;
+        this.followerUid = followerUid;
+        this.followedOn = followedOn;
+    }
+
+    public Follower(String userUid, String followerUid) {
+        this.userUid = userUid;
+        this.followerUid = followerUid;
+        this.followedOn = System.currentTimeMillis();
+    }
 }

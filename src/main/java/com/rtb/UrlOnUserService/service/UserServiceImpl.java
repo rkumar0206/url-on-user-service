@@ -3,19 +3,19 @@ package com.rtb.UrlOnUserService.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
+import com.rtb.UrlOnUserService.domain.Follower;
 import com.rtb.UrlOnUserService.domain.Role;
 import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.exceptions.UserException;
-import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
-import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
-import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
-import com.rtb.UrlOnUserService.models.UserCreateRequest;
+import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
+import com.rtb.UrlOnUserService.repository.FollowerRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
 import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,6 +41,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final FollowerRepository followerRepository;
     private final ConfirmationTokenRepository confirmationTokenRepository;
     private final EmailService emailService;
     private final ObjectMapper objectMapper;
@@ -158,7 +159,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         Optional<UserAccount> userByUid = userRepository.findByUid(updateUserDetailsRequest.getUid());
 
-        if (!userByUid.isPresent()) {
+        if (userByUid.isEmpty()) {
 
             throw new UserException(userNotFoundError);
         } else {
@@ -187,7 +188,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Optional<UserAccount> userByUid = userRepository.findByUid(changeUserEmailIdRequest.getUid());
         Optional<UserAccount> userByEmail = userRepository.findByEmailId(changeUserEmailIdRequest.getPreviousEmailId());
 
-        if (!userByEmail.isPresent() || !userByUid.isPresent()) {
+        if (userByEmail.isEmpty() || userByUid.isEmpty()) {
             throw new UserException(userNotFoundError);
         } else {
 
@@ -223,7 +224,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Optional<UserAccount> userByUid = userRepository.findByUid(changeUserUsernameRequest.getUid());
         Optional<UserAccount> userByUsername = userRepository.findByUsername(changeUserUsernameRequest.getPreviousUsername());
 
-        if (!userByUsername.isPresent() || !userByUid.isPresent()) {
+        if (userByUsername.isEmpty() || userByUid.isEmpty()) {
             throw new UserException(userNotFoundError);
         } else {
 
@@ -243,6 +244,50 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             }
         }
         return userByUsername.orElseThrow(() -> new UserException(userNotFoundError));
+    }
+
+    @Override
+    public void addFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest) {
+
+        Optional<UserAccount> user = userRepository.findByUid(addOrDeleteFollowerRequest.getUserUid());
+        Optional<UserAccount> followerUser = userRepository.findByUid(addOrDeleteFollowerRequest.getFollowerUid());
+
+        if (user.isEmpty() || followerUser.isEmpty())
+            throw new UserException(userNotFoundError);
+
+        validateUserForUpdate(user.get());
+
+        Follower follower = new Follower(
+                user.get().getUid(),
+                followerUser.get().getUid(),
+                addOrDeleteFollowerRequest.getFollowedOn() != null ? addOrDeleteFollowerRequest.getFollowedOn() : System.currentTimeMillis()
+        );
+
+        followerRepository.save(follower);
+        log.info(followerUser.get().getUsername() + " followed user : " + user.get().getUsername());
+    }
+
+    @Override
+    public void deleteFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest) {
+
+        Optional<UserAccount> user = userRepository.findByUid(addOrDeleteFollowerRequest.getUserUid());
+        Optional<UserAccount> followerUser = userRepository.findByUid(addOrDeleteFollowerRequest.getFollowerUid());
+
+        if (user.isEmpty() || followerUser.isEmpty())
+            throw new UserException(userNotFoundError);
+
+        validateUserForUpdate(user.get());
+
+        followerRepository.deleteByUserUidAndFollowerUid(user.get().getUid(), followerUser.get().getUid());
+
+        log.info(followerUser.get().getUsername() + " unfollowed the user : " + user.get().getUsername());
+    }
+
+    @Override
+    public Page<UserAccount> getAllFollowersOfUser(String uid) {
+
+
+        return null;
     }
 
     private void validateUserForUpdate(UserAccount userAccount) throws RuntimeException {
@@ -284,7 +329,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 return AccountVerificationMessage.INVALID;
             }
         }
-
         return AccountVerificationMessage.INVALID;
     }
 

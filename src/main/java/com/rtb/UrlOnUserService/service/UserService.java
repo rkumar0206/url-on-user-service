@@ -2,10 +2,8 @@ package com.rtb.UrlOnUserService.service;
 
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.UserAccount;
-import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
-import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
-import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
-import com.rtb.UrlOnUserService.models.UserCreateRequest;
+import com.rtb.UrlOnUserService.models.*;
+import org.springframework.data.domain.Page;
 
 public interface UserService {
 
@@ -16,6 +14,12 @@ public interface UserService {
     UserAccount changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest);
 
     UserAccount changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest);
+
+    void addFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest);
+
+    void deleteFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest);
+
+    Page<UserAccount> getAllFollowersOfUser(String uid);
 
     void addRoleToTheUser(UserAccount user, String roleName);
 
