@@ -1,6 +1,9 @@
 package com.rtb.UrlOnUserService.domain;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -13,12 +16,11 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-@NoArgsConstructor
 @AllArgsConstructor
 public class UserAccount implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "email_id", nullable = false, unique = true, length = 50)
@@ -52,5 +54,39 @@ public class UserAccount implements Serializable {
     private String resetPasswordToken;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    private Collection<Role> roles = new ArrayList<>();
+    private Collection<Role> roles;
+
+    public UserAccount() {
+        this.roles = new ArrayList<>();
+    }
+
+    public UserAccount(String emailId, String username, String password, String uid, String firstName, String lastName, String profileImage, String phoneNumber, Date dob, boolean isAccountVerified, String resetPasswordToken, Collection<Role> roles) {
+        this.emailId = emailId;
+        this.username = username;
+        this.password = password;
+        this.uid = uid;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.profileImage = profileImage;
+        this.phoneNumber = phoneNumber;
+        this.dob = dob;
+        this.isAccountVerified = isAccountVerified;
+        this.resetPasswordToken = resetPasswordToken;
+        this.roles = roles;
+    }
+
+    public UserAccount(String emailId, String username, String password, String uid, String firstName, String lastName, String profileImage, String phoneNumber, Date dob, boolean isAccountVerified, String resetPasswordToken) {
+        this();
+        this.emailId = emailId;
+        this.username = username;
+        this.password = password;
+        this.uid = uid;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.profileImage = profileImage;
+        this.phoneNumber = phoneNumber;
+        this.dob = dob;
+        this.isAccountVerified = isAccountVerified;
+        this.resetPasswordToken = resetPasswordToken;
+    }
 }
