@@ -2,7 +2,10 @@ package com.rtb.UrlOnUserService.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
-import com.rtb.UrlOnUserService.domain.*;
+import com.rtb.UrlOnUserService.domain.ConfirmationToken;
+import com.rtb.UrlOnUserService.domain.Follower;
+import com.rtb.UrlOnUserService.domain.Role;
+import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -359,7 +362,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void addRoleToTheUser(UserAccount user, RoleNames roleName) {
+    public void addRoleToTheUser(UserAccount user, String roleName) {
 
         Optional<Role> role = roleRepository.findByRoleName(roleName);
         role.ifPresent(value -> user.getRoles().add(value));
