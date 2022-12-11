@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.Role;
+import com.rtb.UrlOnUserService.domain.RoleNames;
 import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
@@ -11,6 +12,7 @@ import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
 import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
 import com.rtb.UrlOnUserService.models.UserCreateRequest;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
+import com.rtb.UrlOnUserService.repository.FollowerRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
 import com.rtb.UrlOnUserService.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,8 @@ class UserServiceImplTest {
     @Mock
     private RoleRepository roleRepository;
     @Mock
+    private FollowerRepository followerRepository;
+    @Mock
     private ConfirmationTokenRepository confirmationTokenRepository;
     @Mock
     private EmailService emailService;
@@ -75,7 +79,7 @@ class UserServiceImplTest {
                 new ArrayList<>()
         );
 
-        userService = new UserServiceImpl(userRepository, roleRepository, confirmationTokenRepository, emailService, new ObjectMapper(), bCryptPasswordEncoder);
+        userService = new UserServiceImpl(userRepository, roleRepository, followerRepository, confirmationTokenRepository, emailService, new ObjectMapper(), bCryptPasswordEncoder);
     }
 
     private void mockSecurityContextHolder() {
@@ -359,11 +363,11 @@ class UserServiceImplTest {
     @Test
     void addRoleToTheUser_success() {
 
-        Role role = new Role(1L, "ROLE_ADMIN");
+        Role role = new Role(1L, RoleNames.ADMIN);
 
-        when(roleRepository.findByRoleName(anyString())).thenReturn(Optional.of(role));
+        when(roleRepository.findByRoleName(any())).thenReturn(Optional.of(role));
 
-        userService.addRoleToTheUser(user, "ROLE_ADMIN");
+        userService.addRoleToTheUser(user, "ADMIN");
 
         assertThat(user.getRoles()).isNotEmpty();
     }

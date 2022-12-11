@@ -1,6 +1,7 @@
 package com.rtb.UrlOnUserService.repository;
 
 import com.rtb.UrlOnUserService.domain.Role;
+import com.rtb.UrlOnUserService.domain.RoleNames;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ class RoleRepositoryTest {
 
         role = new Role(
                 null,
-                "ROLE_ADMIN"
+                RoleNames.ADMIN
         );
 
         roleRepository.save(role);
