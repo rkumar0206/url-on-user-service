@@ -11,12 +11,12 @@ import org.springframework.http.HttpStatus;
 @Setter
 @Builder
 public class CustomResponse<T> {
-    String status;
+    String code;
     T response;
 
     public CustomResponse() {
 
-        this.status = "" + HttpStatus.INTERNAL_SERVER_ERROR.value();
+        this.code = "" + HttpStatus.INTERNAL_SERVER_ERROR.value();
         this.response = null;
     }
 }

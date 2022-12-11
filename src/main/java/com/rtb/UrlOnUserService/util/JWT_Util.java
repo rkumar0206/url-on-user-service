@@ -11,13 +11,13 @@ import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-
-import static java.util.Arrays.stream;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class JWT_Util {
@@ -58,9 +58,7 @@ public class JWT_Util {
         userInfo.put("firstName", userAccount.getFirstName());
         userInfo.put("lastName", userAccount.getLastName());
 
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        String[] roles = userAccount.getRoles().stream().map(Role::getRoleName).toArray(String[]::new);
-        stream(roles).forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+        String[] roles = userAccount.getRoles().stream().map(Role::getRoleName).map(Enum::toString).toArray(String[]::new);
 
         return JWT.create()
                 .withSubject(userAccount.getUsername())
@@ -68,7 +66,7 @@ public class JWT_Util {
                 .withKeyId(UUID.randomUUID().toString())
                 .withExpiresAt(new Date(expiry))
                 .withIssuer(issuer)
-                .withClaim("roles", authorities)
+                .withArrayClaim("roles", roles)
                 .withClaim("uid", userAccount.getUid())
                 .withPayload(userInfo)
                 .sign(algorithm);

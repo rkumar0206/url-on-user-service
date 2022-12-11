@@ -8,8 +8,8 @@ import lombok.ToString;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "user_account")
@@ -54,13 +54,13 @@ public class UserAccount implements Serializable {
     private String resetPasswordToken;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    private Collection<Role> roles;
+    private List<Role> roles;
 
     public UserAccount() {
         this.roles = new ArrayList<>();
     }
 
-    public UserAccount(String emailId, String username, String password, String uid, String firstName, String lastName, String profileImage, String phoneNumber, Date dob, boolean isAccountVerified, String resetPasswordToken, Collection<Role> roles) {
+    public UserAccount(String emailId, String username, String password, String uid, String firstName, String lastName, String profileImage, String phoneNumber, Date dob, boolean isAccountVerified, String resetPasswordToken, List<Role> roles) {
         this.emailId = emailId;
         this.username = username;
         this.password = password;

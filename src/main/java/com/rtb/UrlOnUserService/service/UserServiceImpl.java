@@ -13,6 +13,7 @@ import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -281,10 +282,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public Page<UserAccount> getAllFollowersOfUser(String uid) {
+    public Page<UserAccount> getAllFollowersOfUser(String uid, Pageable pageable) {
 
+        if (uid == null || !StringUtils.hasLength(uid.trim()))
+            throw new UserException("User uid is invalid");
 
-        return null;
+        userRepository.findByUid(uid).orElseThrow(() -> new UserException(userNotFoundError));
+
+        return userRepository.findAllFollowersOfUser(uid, pageable);
     }
 
     private void validateUserForUpdate(UserAccount userAccount) throws RuntimeException {

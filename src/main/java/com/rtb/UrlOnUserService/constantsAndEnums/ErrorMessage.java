@@ -15,5 +15,7 @@ public class ErrorMessage {
     public static final String invalidDetailsFoundForChangingEmailIDError = "Invalid details received for changing user email id!!. Please send correct previousEmailId, requestedEmailId and uid";
     public static final String invalidDetailsFoundForChangingUsernameError = "Invalid details received for changing user username!!. Please send correct previousUsername, requestedUsername, and uid";
     public static final String invalidUserAndUIDError = "You cannot make changes to this account";
+    public static final String pageableError = "Max page size should be less than 50";
+
 
 }

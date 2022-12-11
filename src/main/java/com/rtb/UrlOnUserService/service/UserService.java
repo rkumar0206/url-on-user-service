@@ -4,6 +4,7 @@ import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.models.*;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
 
@@ -19,7 +20,7 @@ public interface UserService {
 
     void deleteFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest);
 
-    Page<UserAccount> getAllFollowersOfUser(String uid);
+    Page<UserAccount> getAllFollowersOfUser(String uid, Pageable pageable);
 
     void addRoleToTheUser(UserAccount user, String roleName);
 
