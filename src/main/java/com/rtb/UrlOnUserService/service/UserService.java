@@ -16,11 +16,13 @@ public interface UserService {
 
     UserAccount changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest);
 
-    void addFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest);
+    void followUser(FollowAndUnfollowRequest followAndUnfollowRequest);
 
-    void deleteFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest);
+    void unfollowUser(FollowAndUnfollowRequest followAndUnfollowRequest);
 
     Page<UserAccount> getAllFollowersOfUser(String uid, Pageable pageable);
+
+    Page<UserAccount> getAllFollowingsOfUser(String uid, Pageable pageable);
 
     void addRoleToTheUser(UserAccount user, String roleName);
 
@@ -33,6 +35,8 @@ public interface UserService {
     UserAccount getUserByEmailIdOrByUsername(String username);
 
     UserAccount getUserByResetPasswordToken(String resetPasswordUrl);
+
+    UserAccount getAuthenticatedUser();
 
     AccountVerificationMessage verifyAccount(String token);
 

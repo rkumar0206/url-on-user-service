@@ -3,6 +3,7 @@ package com.rtb.UrlOnUserService.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.*;
+import com.rtb.UrlOnUserService.exceptions.FollowerException;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
@@ -84,6 +85,21 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public UserAccount getUserByResetPasswordToken(String resetPasswordUrl) {
 
         return userRepository.findByResetPasswordToken(resetPasswordUrl).orElse(null);
+    }
+
+    @Override
+    public UserAccount getAuthenticatedUser() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Optional<UserAccount> userAccount = userRepository.findByUsername(authentication.getPrincipal().toString());
+
+        if (userAccount.isEmpty())
+            throw new UserException(userNotFoundError);
+
+        if (!userAccount.get().isAccountVerified())
+            throw new UserException(accountNotVerifiedError);
+
+        return userAccount.get();
     }
 
     @Override
@@ -245,51 +261,62 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void addFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest) {
+    public void followUser(FollowAndUnfollowRequest followAndUnfollowRequest) {
 
-        Optional<UserAccount> user = userRepository.findByUid(addOrDeleteFollowerRequest.getUserUid());
-        Optional<UserAccount> followerUser = userRepository.findByUid(addOrDeleteFollowerRequest.getFollowerUid());
+        UserAccount user = getAuthenticatedUser();
+        validateUserForUpdate(user);
 
-        if (user.isEmpty() || followerUser.isEmpty())
-            throw new UserException(userNotFoundError);
+        Optional<UserAccount> followingUser = userRepository.findByUid(followAndUnfollowRequest.getFollowingUid());
+        if (followingUser.isEmpty())
+            throw new FollowerException(String.format(userWithUidNotFoundError, followAndUnfollowRequest.getFollowingUid()));
 
-        validateUserForUpdate(user.get());
+        if (!followingUser.get().isAccountVerified())
+            throw new FollowerException(String.format(accountNotVerifiedForUidError, followingUser.get().getUid()));
+
+        boolean isRecordAlreadyPresent = followerRepository.findByFollowerUidAndFollowingUid(user.getUid(), followingUser.get().getUid()).isPresent();
+
+        if (isRecordAlreadyPresent)
+            throw new FollowerException(String.format(userAlreadyFollowingErrorMessage, followingUser.get().getUsername(), user.getUsername()));
 
         Follower follower = new Follower(
-                user.get().getUid(),
-                followerUser.get().getUid(),
-                addOrDeleteFollowerRequest.getFollowedOn() != null ? addOrDeleteFollowerRequest.getFollowedOn() : System.currentTimeMillis()
+                followingUser.get().getUid(),  // authenticated user is going to follow this user
+                user.getUid(),  // authenticated user will become the follower
+                followAndUnfollowRequest.getFollowedOn() != null ? followAndUnfollowRequest.getFollowedOn() : System.currentTimeMillis()
         );
 
         followerRepository.save(follower);
-        log.info(followerUser.get().getUsername() + " followed user : " + user.get().getUsername());
+        log.info(followingUser.get().getUsername() + " followed by user : " + user.getUsername());
     }
 
     @Override
-    public void deleteFollower(AddOrDeleteFollowerRequest addOrDeleteFollowerRequest) {
+    public void unfollowUser(FollowAndUnfollowRequest followAndUnfollowRequest) {
 
-        Optional<UserAccount> user = userRepository.findByUid(addOrDeleteFollowerRequest.getUserUid());
-        Optional<UserAccount> followerUser = userRepository.findByUid(addOrDeleteFollowerRequest.getFollowerUid());
+        UserAccount user = getAuthenticatedUser();
+        validateUserForUpdate(user);
 
-        if (user.isEmpty() || followerUser.isEmpty())
-            throw new UserException(userNotFoundError);
-
-        validateUserForUpdate(user.get());
-
-        followerRepository.deleteByUserUidAndFollowerUid(user.get().getUid(), followerUser.get().getUid());
-
-        log.info(followerUser.get().getUsername() + " unfollowed the user : " + user.get().getUsername());
+        userRepository.findByUid(followAndUnfollowRequest.getFollowingUid()).orElseThrow(() -> new FollowerException(String.format(userWithUidNotFoundError, followAndUnfollowRequest.getFollowingUid())));
+        followerRepository.deleteByFollowingUidAndFollowerUid(followAndUnfollowRequest.getFollowingUid(), user.getUid());
     }
 
     @Override
     public Page<UserAccount> getAllFollowersOfUser(String uid, Pageable pageable) {
 
         if (uid == null || !StringUtils.hasLength(uid.trim()))
-            throw new UserException("User uid is invalid");
+            throw new FollowerException("User uid is invalid");
 
-        userRepository.findByUid(uid).orElseThrow(() -> new UserException(userNotFoundError));
+        userRepository.findByUid(uid).orElseThrow(() -> new FollowerException(String.format(userWithUidNotFoundError, uid)));
 
         return userRepository.findAllFollowersOfUser(uid, pageable);
+    }
+
+    @Override
+    public Page<UserAccount> getAllFollowingsOfUser(String uid, Pageable pageable) {
+
+        if (uid == null || !StringUtils.hasLength(uid.trim()))
+            throw new FollowerException("User uid is invalid");
+
+        userRepository.findByUid(uid).orElseThrow(() -> new FollowerException(String.format(userWithUidNotFoundError, uid)));
+        return userRepository.findAllUserAccountsUserIsFollowing(uid, pageable);
     }
 
     private void validateUserForUpdate(UserAccount userAccount) throws RuntimeException {
@@ -297,7 +324,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!authentication.isAuthenticated())
-            throw new UserException("User is not authenticated");
+            throw new UserException(userNotAuthenticatedError);
 
         if (!authentication.getPrincipal().toString().equals(userAccount.getUsername()))
             throw new UserException(invalidUserAndUIDError);

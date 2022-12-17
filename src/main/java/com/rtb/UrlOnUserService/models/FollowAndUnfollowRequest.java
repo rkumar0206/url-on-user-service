@@ -9,16 +9,14 @@ import org.springframework.util.StringUtils;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class AddOrDeleteFollowerRequest {
+public class FollowAndUnfollowRequest {
 
-    private String userUid;
-    private String followerUid;
+    private String followingUid;
     private Long followedOn;
 
     @JsonIgnore
     public boolean isRequestValid() {
 
-        return userUid != null && StringUtils.hasLength(userUid.trim())
-                && followerUid != null && StringUtils.hasLength(followerUid.trim());
+        return followingUid != null && StringUtils.hasLength(followingUid.trim());
     }
 }

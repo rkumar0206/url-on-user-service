@@ -17,5 +17,7 @@ public class Constants {
     public static final String USER_DETAILS_UPDATED_SUCCESSFULLY = "User details updated successfully.";
     public static final String USER_EMAIL_ID_UPDATED_SUCCESSFULLY = "Email ID updated successfully. Please check your mail to verify your new email address.";
     public static final String USER_USERNAME_UPDATED_SUCCESSFULLY = "Username updated successfully.";
+    public static final String FOLLOWER_ADDED = "Followed user %s successfully";
+    public static final String FOLLOWER_DELETED = "Un-followed user %s";
 
 }

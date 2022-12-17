@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.UserAccount;
+import com.rtb.UrlOnUserService.exceptions.FollowerException;
 import com.rtb.UrlOnUserService.exceptions.PageableException;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.*;
@@ -145,6 +146,50 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
+    @PutMapping("/follower/add")
+    public ResponseEntity<CustomResponse<String>> addFollower(@RequestBody FollowAndUnfollowRequest followAndUnfollowRequest) {
+
+        CustomResponse<String> response = new CustomResponse<>();
+
+        try {
+
+            if (!followAndUnfollowRequest.isRequestValid())
+                throw new FollowerException(requestBodyError);
+
+            userService.followUser(followAndUnfollowRequest);
+            response.setResponse(String.format(FOLLOWER_ADDED, followAndUnfollowRequest.getFollowingUid()));
+            response.setCode("" + HttpStatus.OK.value());
+            log.info(String.format(FOLLOWER_ADDED, followAndUnfollowRequest.getFollowingUid()));
+
+        } catch (Exception e) {
+            response = getCustomResponseForException(e);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/follower/delete")
+    public ResponseEntity<CustomResponse<String>> deleteFollower(@RequestBody FollowAndUnfollowRequest followAndUnfollowRequest) {
+
+        CustomResponse<String> response = new CustomResponse<>();
+
+        try {
+
+            if (!followAndUnfollowRequest.isRequestValid())
+                throw new FollowerException(requestBodyError);
+
+            userService.unfollowUser(followAndUnfollowRequest);
+            response.setResponse(String.format(FOLLOWER_DELETED, followAndUnfollowRequest.getFollowingUid()));
+            response.setCode("" + HttpStatus.OK.value());
+            log.info(String.format(FOLLOWER_DELETED, followAndUnfollowRequest.getFollowingUid()));
+
+        } catch (Exception e) {
+            response = getCustomResponseForException(e);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
     @PutMapping("/update/username")
     public ResponseEntity<CustomResponse<Map<String, String>>> changeUserUsername(@RequestBody ChangeUserUsernameRequest changeUserUsernameRequest) {
 
@@ -246,7 +291,6 @@ public class UserController {
         }
     }
 
-
     @GetMapping("/detail/uid")
     public ResponseEntity<CustomResponse> getUserDetailsByUid(@RequestParam("uid") String uid) {
 
@@ -317,6 +361,29 @@ public class UserController {
             return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
         }
 
+    }
+
+    @GetMapping("/following/user/{uid}")
+    public ResponseEntity<CustomResponse> getAllFollowingsOfUser(@PathVariable("uid") String uid, Pageable pageable) {
+
+        try {
+            if (pageable.getPageSize() > 50) {
+                throw new PageableException(pageableError);
+            }
+
+            Page<UserAccount> accounts = userService.getAllFollowingsOfUser(uid, pageable);
+            CustomResponse<Page<UserDetailResponse>> customResponse =
+                    CustomResponse.<Page<UserDetailResponse>>builder()
+                            .code("" + HttpStatus.OK.value())
+                            .response(accounts.map(ModelMapper::buildUserDetailResponse))
+                            .build();
+
+            return new ResponseEntity<>(customResponse, HttpStatus.OK);
+        } catch (Exception e) {
+
+            CustomResponse<String> customResponse = getCustomResponseForException(e);
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
+        }
     }
 
     @GetMapping("/account/verify")

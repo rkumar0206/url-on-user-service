@@ -17,22 +17,22 @@ public class Follower {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_uid", nullable = false, length = 50)
-    private String userUid;
+    @Column(name = "following_uid", nullable = false, length = 50)
+    private String followingUid;
     @Column(name = "follower_uid", nullable = false, length = 50)
     private String followerUid;
 
     @Column(name = "followed_on", nullable = false)
     private Long followedOn;
 
-    public Follower(String userUid, String followerUid, Long followedOn) {
-        this.userUid = userUid;
+    public Follower(String followingUid, String followerUid, Long followedOn) {
+        this.followingUid = followingUid;
         this.followerUid = followerUid;
         this.followedOn = followedOn;
     }
 
-    public Follower(String userUid, String followerUid) {
-        this.userUid = userUid;
+    public Follower(String followingUid, String followerUid) {
+        this.followingUid = followingUid;
         this.followerUid = followerUid;
         this.followedOn = System.currentTimeMillis();
     }

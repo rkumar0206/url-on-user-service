@@ -1,6 +1,7 @@
 package com.rtb.UrlOnUserService.util;
 
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
+import com.rtb.UrlOnUserService.exceptions.FollowerException;
 import com.rtb.UrlOnUserService.exceptions.PageableException;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.CustomResponse;
@@ -59,8 +60,8 @@ public class Utility {
         CustomResponse<String> customResponse = new CustomResponse<>();
 
         if (e instanceof UserException) {
-            customResponse.setCode("" + HttpStatus.UNAUTHORIZED.value());
-        } else if (e instanceof PageableException) {
+            customResponse.setCode("" + HttpStatus.FORBIDDEN.value());
+        } else if (e instanceof PageableException || e instanceof FollowerException) {
             customResponse.setCode("" + HttpStatus.BAD_REQUEST.value());
         } else {
             customResponse.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
