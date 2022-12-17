@@ -4,7 +4,6 @@ import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.ConfirmationToken;
 import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
-import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
@@ -48,7 +47,7 @@ public class EmailServiceImpl implements EmailService {
         simpleMailMessage.setSubject(Constants.CONFIRMATION_EMAIL_SUBJECT);
         simpleMailMessage.setFrom(Constants.EMAIL_FROM);
         simpleMailMessage.setText("To verify your account from UrlOn application please click on below link\n" +
-                Utility.getSiteUrl(request) + "/urlon/api/users/account/verify?token=" + confirmationToken.getConfirmationToken());
+                "http://localhost:8004" + "/urlon/api/users/account/verify?token=" + confirmationToken.getConfirmationToken());
 
         sendMail(simpleMailMessage);
 
@@ -79,11 +78,12 @@ public class EmailServiceImpl implements EmailService {
 
         try {
 
-            log.info("Sending mail...");
+            new Thread(() -> {
 
-            javaMailSender.send(mailMessage);
-
-            log.info("Mail sent successfully...");
+                log.info("Sending mail...");
+                javaMailSender.send(mailMessage);
+                log.info("Mail sent successfully...");
+            }).start();
 
         } catch (Exception e) {
             e.printStackTrace();

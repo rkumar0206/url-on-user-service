@@ -2,10 +2,9 @@ package com.rtb.UrlOnUserService.service;
 
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.domain.UserAccount;
-import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
-import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
-import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
-import com.rtb.UrlOnUserService.models.UserCreateRequest;
+import com.rtb.UrlOnUserService.models.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
 
@@ -16,6 +15,14 @@ public interface UserService {
     UserAccount changeUserEmailId(ChangeUserEmailIdRequest changeUserEmailIdRequest);
 
     UserAccount changeUserUsername(ChangeUserUsernameRequest changeUserUsernameRequest);
+
+    void followUser(FollowAndUnfollowRequest followAndUnfollowRequest);
+
+    void unfollowUser(FollowAndUnfollowRequest followAndUnfollowRequest);
+
+    Page<UserAccount> getAllFollowersOfUser(String uid, Pageable pageable);
+
+    Page<UserAccount> getAllFollowingsOfUser(String uid, Pageable pageable);
 
     void addRoleToTheUser(UserAccount user, String roleName);
 
@@ -28,6 +35,8 @@ public interface UserService {
     UserAccount getUserByEmailIdOrByUsername(String username);
 
     UserAccount getUserByResetPasswordToken(String resetPasswordUrl);
+
+    UserAccount getAuthenticatedUser();
 
     AccountVerificationMessage verifyAccount(String token);
 
