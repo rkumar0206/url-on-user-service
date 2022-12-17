@@ -4,7 +4,6 @@ import com.rtb.UrlOnUserService.domain.UserAccount;
 import com.rtb.UrlOnUserService.service.EmailService;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
-import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -47,7 +46,7 @@ public class PasswordResetController {
 
             String token = JWT_Util.generateTokenWithExpiry(user.getEmailId(), System.currentTimeMillis() + 10 * 60 * 1000);
 
-            String resetPasswordUrl = Utility.getSiteUrl(request) + "/urlon/api/users/account/passwordReset?uid=" + user.getUid() + "&token=" + token;
+            String resetPasswordUrl = "http://localhost:8004" + "/urlon/api/users/account/passwordReset?uid=" + user.getUid() + "&token=" + token;
 
             try {
                 emailService.sendPasswordResetUrl(user, resetPasswordUrl);
