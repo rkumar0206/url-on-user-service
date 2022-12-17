@@ -8,14 +8,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
 import com.rtb.UrlOnUserService.constantsAndEnums.Constants;
 import com.rtb.UrlOnUserService.domain.UserAccount;
+import com.rtb.UrlOnUserService.exceptions.FollowerException;
+import com.rtb.UrlOnUserService.exceptions.PageableException;
 import com.rtb.UrlOnUserService.exceptions.UserException;
 import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.service.UserService;
 import com.rtb.UrlOnUserService.util.JWT_Util;
+import com.rtb.UrlOnUserService.util.ModelMapper;
 import com.rtb.UrlOnUserService.util.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,6 +36,7 @@ import java.util.Map;
 
 import static com.rtb.UrlOnUserService.constantsAndEnums.Constants.*;
 import static com.rtb.UrlOnUserService.constantsAndEnums.ErrorMessage.*;
+import static com.rtb.UrlOnUserService.util.Utility.getCustomResponseForException;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -55,23 +61,23 @@ public class UserController {
                 userService.saveUser(userCreateRequest);
 
                 response.setResponse(USER_CREATED_SUCCESSFULLY);
-                response.setStatus("" + HttpStatus.CREATED.value());
+                response.setCode("" + HttpStatus.CREATED.value());
 
             } catch (RuntimeException exception) {
 
                 response.setResponse(exception.getMessage());
                 if (exception.getMessage().equals(sendingMailError)) {
-                    response.setStatus("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    response.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
                 } else {
-                    response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+                    response.setCode("" + HttpStatus.BAD_REQUEST.value());
                 }
             }
         } else {
 
             response.setResponse(invalidUserDetailsForCreateError);
-            response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
         }
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @PutMapping("/update")
@@ -86,21 +92,21 @@ public class UserController {
                 userService.updateUserDetails(updateUserDetailsRequest);
 
                 response.setResponse(USER_DETAILS_UPDATED_SUCCESSFULLY);
-                response.setStatus("" + HttpStatus.OK.value());
+                response.setCode("" + HttpStatus.OK.value());
                 log.info(USER_DETAILS_UPDATED_SUCCESSFULLY);
             } catch (RuntimeException exception) {
 
                 response.setResponse(exception.getMessage());
-                response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+                response.setCode("" + HttpStatus.BAD_REQUEST.value());
             }
         } else {
 
             response.setResponse(invalidUserDetailsForUpdateError);
-            response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
             log.error(invalidUserDetailsForUpdateError);
         }
 
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @PutMapping("/update/emailId")
@@ -115,7 +121,7 @@ public class UserController {
                 userService.changeUserEmailId(changeUserEmailIdRequest);
 
                 response.setResponse(USER_EMAIL_ID_UPDATED_SUCCESSFULLY);
-                response.setStatus("" + HttpStatus.OK.value());
+                response.setCode("" + HttpStatus.OK.value());
 
                 log.info(USER_EMAIL_ID_UPDATED_SUCCESSFULLY);
 
@@ -124,20 +130,64 @@ public class UserController {
                 response.setResponse(exception.getMessage());
 
                 if (exception.getMessage().equals(sendingMailError)) {
-                    response.setStatus("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    response.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
                 } else {
-                    response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+                    response.setCode("" + HttpStatus.BAD_REQUEST.value());
                 }
             }
 
         } else {
 
             response.setResponse(invalidDetailsFoundForChangingEmailIDError);
-            response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
             log.error(invalidDetailsFoundForChangingEmailIDError);
         }
 
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/follower/add")
+    public ResponseEntity<CustomResponse<String>> addFollower(@RequestBody FollowAndUnfollowRequest followAndUnfollowRequest) {
+
+        CustomResponse<String> response = new CustomResponse<>();
+
+        try {
+
+            if (!followAndUnfollowRequest.isRequestValid())
+                throw new FollowerException(requestBodyError);
+
+            userService.followUser(followAndUnfollowRequest);
+            response.setResponse(String.format(FOLLOWER_ADDED, followAndUnfollowRequest.getFollowingUid()));
+            response.setCode("" + HttpStatus.OK.value());
+            log.info(String.format(FOLLOWER_ADDED, followAndUnfollowRequest.getFollowingUid()));
+
+        } catch (Exception e) {
+            response = getCustomResponseForException(e);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
+    }
+
+    @PutMapping("/follower/delete")
+    public ResponseEntity<CustomResponse<String>> deleteFollower(@RequestBody FollowAndUnfollowRequest followAndUnfollowRequest) {
+
+        CustomResponse<String> response = new CustomResponse<>();
+
+        try {
+
+            if (!followAndUnfollowRequest.isRequestValid())
+                throw new FollowerException(requestBodyError);
+
+            userService.unfollowUser(followAndUnfollowRequest);
+            response.setResponse(String.format(FOLLOWER_DELETED, followAndUnfollowRequest.getFollowingUid()));
+            response.setCode("" + HttpStatus.OK.value());
+            log.info(String.format(FOLLOWER_DELETED, followAndUnfollowRequest.getFollowingUid()));
+
+        } catch (Exception e) {
+            response = getCustomResponseForException(e);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @PutMapping("/update/username")
@@ -156,24 +206,24 @@ public class UserController {
                 returnDetails.put(ACCESS_TOKEN, JWT_Util.generateAccessToken(userAccount));  // new access token
                 returnDetails.put(REFRESH_TOKEN, JWT_Util.generateRefreshToken(userAccount)); // new refresh token
 
-                response.setStatus("" + HttpStatus.OK.value());
+                response.setCode("" + HttpStatus.OK.value());
                 log.info(USER_USERNAME_UPDATED_SUCCESSFULLY);
 
             } catch (RuntimeException exception) {
 
                 log.error(exception.getMessage());
                 returnDetails.put("message", exception.getMessage());
-                response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+                response.setCode("" + HttpStatus.BAD_REQUEST.value());
             }
         } else {
 
             returnDetails.put("message", invalidDetailsFoundForChangingUsernameError);
-            response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+            response.setCode("" + HttpStatus.BAD_REQUEST.value());
             log.error(invalidDetailsFoundForChangingUsernameError);
         }
 
         response.setResponse(returnDetails);
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @GetMapping("/checkUsernameExists")
@@ -185,15 +235,15 @@ public class UserController {
 
         if (user != null) {
 
-            response.setStatus("" + HttpStatus.OK.value());
+            response.setCode("" + HttpStatus.OK.value());
             response.setResponse("Username already taken.");
         } else {
 
-            response.setStatus("" + HttpStatus.NO_CONTENT.value());
+            response.setCode("" + HttpStatus.NO_CONTENT.value());
             response.setResponse("User not found with this username.");
         }
 
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @GetMapping("/checkEmailExists")
@@ -205,15 +255,15 @@ public class UserController {
 
         if (user != null) {
 
-            response.setStatus("" + HttpStatus.OK.value());
+            response.setCode("" + HttpStatus.OK.value());
             response.setResponse("Account already present with this email id.");
         } else {
 
-            response.setStatus("" + HttpStatus.NO_CONTENT.value());
+            response.setCode("" + HttpStatus.NO_CONTENT.value());
             response.setResponse("User not found with this Email Id.");
         }
 
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @GetMapping("/myDetails")
@@ -232,15 +282,14 @@ public class UserController {
 
             CustomResponse<String> customResponse = new CustomResponse<>();
             if (e instanceof UserException) {
-                customResponse.setStatus("" + HttpStatus.UNAUTHORIZED.value());
+                customResponse.setCode("" + HttpStatus.UNAUTHORIZED.value());
             } else {
-                customResponse.setStatus("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                customResponse.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
             customResponse.setResponse(e.getMessage());
-            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getStatus())));
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
         }
     }
-
 
     @GetMapping("/detail/uid")
     public ResponseEntity<CustomResponse> getUserDetailsByUid(@RequestParam("uid") String uid) {
@@ -257,12 +306,12 @@ public class UserController {
 
             CustomResponse<String> customResponse = new CustomResponse<>();
             if (e instanceof UserException) {
-                customResponse.setStatus("" + HttpStatus.UNAUTHORIZED.value());
+                customResponse.setCode("" + HttpStatus.UNAUTHORIZED.value());
             } else {
-                customResponse.setStatus("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                customResponse.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
             customResponse.setResponse(e.getMessage());
-            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getStatus())));
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
         }
     }
 
@@ -281,12 +330,59 @@ public class UserController {
 
             CustomResponse<String> customResponse = new CustomResponse<>();
             if (e instanceof UserException) {
-                customResponse.setStatus("" + HttpStatus.UNAUTHORIZED.value());
+                customResponse.setCode("" + HttpStatus.UNAUTHORIZED.value());
             } else {
-                customResponse.setStatus("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
+                customResponse.setCode("" + HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
             customResponse.setResponse(e.getMessage());
-            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getStatus())));
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
+        }
+    }
+
+    @GetMapping("/follower/user/{uid}")
+    public ResponseEntity<CustomResponse> getAllFollowersOfUser(@PathVariable("uid") String uid, Pageable pageable) {
+
+        try {
+            if (pageable.getPageSize() > 50) {
+                throw new PageableException(pageableError);
+            }
+
+            Page<UserAccount> accounts = userService.getAllFollowersOfUser(uid, pageable);
+            CustomResponse<Page<UserDetailResponse>> customResponse =
+                    CustomResponse.<Page<UserDetailResponse>>builder()
+                            .code("" + HttpStatus.OK.value())
+                            .response(accounts.map(ModelMapper::buildUserDetailResponse))
+                            .build();
+
+            return new ResponseEntity<>(customResponse, HttpStatus.OK);
+        } catch (Exception e) {
+
+            CustomResponse<String> customResponse = getCustomResponseForException(e);
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
+        }
+
+    }
+
+    @GetMapping("/following/user/{uid}")
+    public ResponseEntity<CustomResponse> getAllFollowingsOfUser(@PathVariable("uid") String uid, Pageable pageable) {
+
+        try {
+            if (pageable.getPageSize() > 50) {
+                throw new PageableException(pageableError);
+            }
+
+            Page<UserAccount> accounts = userService.getAllFollowingsOfUser(uid, pageable);
+            CustomResponse<Page<UserDetailResponse>> customResponse =
+                    CustomResponse.<Page<UserDetailResponse>>builder()
+                            .code("" + HttpStatus.OK.value())
+                            .response(accounts.map(ModelMapper::buildUserDetailResponse))
+                            .build();
+
+            return new ResponseEntity<>(customResponse, HttpStatus.OK);
+        } catch (Exception e) {
+
+            CustomResponse<String> customResponse = getCustomResponseForException(e);
+            return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
         }
     }
 
@@ -294,7 +390,7 @@ public class UserController {
     public ResponseEntity<CustomResponse<String>> verifyAccount(@RequestParam("token") String token) {
 
         CustomResponse<String> response = CustomResponse.<String>builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.toString())
+                .code(HttpStatus.INTERNAL_SERVER_ERROR.toString())
                 .response("Something went wrong")
                 .build();
 
@@ -304,25 +400,25 @@ public class UserController {
 
             case VERIFIED: {
                 response.setResponse("Account verified.");
-                response.setStatus("" + HttpStatus.OK.value());
+                response.setCode("" + HttpStatus.OK.value());
             }
             break;
 
             case ALREADY_VERIFIED: {
 
                 response.setResponse("Account already verified. Please login.");
-                response.setStatus("" + HttpStatus.OK.value());
+                response.setCode("" + HttpStatus.OK.value());
             }
             break;
 
             case INVALID: {
 
                 response.setResponse("Invalid token.");
-                response.setStatus("" + HttpStatus.BAD_REQUEST.value());
+                response.setCode("" + HttpStatus.BAD_REQUEST.value());
             }
         }
 
-        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getStatus())));
+        return new ResponseEntity<>(response, HttpStatus.valueOf(Integer.parseInt(response.getCode())));
     }
 
     @GetMapping("/token/refresh")
@@ -381,23 +477,10 @@ public class UserController {
 
     private CustomResponse<UserDetailResponse> buildCustomResponseWithUserDetails(UserAccount user) {
 
-        UserDetailResponse userSelfDetailsResponse = UserDetailResponse.builder()
-                .emailId(user.getEmailId())
-                .username(user.getUsername())
-                .uid(user.getUid())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .profileImage(user.getProfileImage())
-                .phoneNumber(user.getPhoneNumber())
-                .dob(user.getDob())
-                .roles(user.getRoles())
-                .build();
-
+        UserDetailResponse userSelfDetailsResponse = ModelMapper.buildUserDetailResponse(user);
         CustomResponse<UserDetailResponse> customResponse = new CustomResponse<>();
-
-        customResponse.setStatus("" + HttpStatus.OK.value());
+        customResponse.setCode("" + HttpStatus.OK.value());
         customResponse.setResponse(userSelfDetailsResponse);
-
         return customResponse;
     }
 
