@@ -2,15 +2,10 @@ package com.rtb.UrlOnUserService.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rtb.UrlOnUserService.constantsAndEnums.AccountVerificationMessage;
-import com.rtb.UrlOnUserService.domain.ConfirmationToken;
-import com.rtb.UrlOnUserService.domain.Role;
-import com.rtb.UrlOnUserService.domain.RoleNames;
-import com.rtb.UrlOnUserService.domain.UserAccount;
+import com.rtb.UrlOnUserService.domain.*;
+import com.rtb.UrlOnUserService.exceptions.FollowerException;
 import com.rtb.UrlOnUserService.exceptions.UserException;
-import com.rtb.UrlOnUserService.models.ChangeUserEmailIdRequest;
-import com.rtb.UrlOnUserService.models.ChangeUserUsernameRequest;
-import com.rtb.UrlOnUserService.models.UpdateUserDetailsRequest;
-import com.rtb.UrlOnUserService.models.UserCreateRequest;
+import com.rtb.UrlOnUserService.models.*;
 import com.rtb.UrlOnUserService.repository.ConfirmationTokenRepository;
 import com.rtb.UrlOnUserService.repository.FollowerRepository;
 import com.rtb.UrlOnUserService.repository.RoleRepository;
@@ -22,6 +17,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -96,6 +93,12 @@ class UserServiceImplTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
+    private void mockGetAuthenticatedUserMethod() {
+
+        mockSecurityContextHolder();
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
+
+    }
 
     @Test
     void loadUserByUsername_searchByUsername_user_not_null() {
@@ -373,6 +376,39 @@ class UserServiceImplTest {
     }
 
     @Test
+    void getAuthenticatedUser_userValid_Success() {
+
+        mockSecurityContextHolder();
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
+
+        UserAccount authenticatedUser = userService.getAuthenticatedUser();
+        assertNotNull(authenticatedUser);
+    }
+
+    @Test
+    void getAuthenticatedUser_userNotFound_ExceptionThrown() {
+
+        mockSecurityContextHolder();
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getAuthenticatedUser())
+                .isInstanceOf(UserException.class)
+                .hasMessageContaining(userNotFoundError);
+    }
+
+    @Test
+    void getAuthenticatedUser_userFoundButNotVerified_ExceptionThrown() {
+
+        mockSecurityContextHolder();
+        user.setAccountVerified(false);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.getAuthenticatedUser())
+                .isInstanceOf(UserException.class)
+                .hasMessageContaining(accountNotVerifiedError);
+    }
+
+    @Test
     void updateUserDetails_InformationValid_UpdateSuccessful() {
 
         UpdateUserDetailsRequest updateUserDetailsRequest = UpdateUserDetailsRequest.builder()
@@ -415,7 +451,6 @@ class UserServiceImplTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(userNotFoundError);
     }
-
 
     @Test
     void updateUserDetails_UsernameMismatch_exceptionIsThrown() {
@@ -551,6 +586,240 @@ class UserServiceImplTest {
                 .isInstanceOf(UserException.class)
                 .hasMessageContaining(duplicateUsernameError);
 
+    }
+
+    @Test
+    void followUser_EverythingValid_Success() {
+
+        mockGetAuthenticatedUserMethod();
+
+        UserAccount followingUser = new UserAccount(
+                "followingEmail",
+                "followingUsername",
+                "followingPassword",
+                "followingUid000",
+                "firstName",
+                "lastName",
+                "",
+                "",
+                new Date(),
+                true,
+                null
+        );
+
+        when(userRepository.findByUid(followingUser.getUid())).thenReturn(Optional.of(followingUser));
+        when(followerRepository.findByFollowerUidAndFollowingUid(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+
+        FollowAndUnfollowRequest followAndUnfollowRequest = FollowAndUnfollowRequest.builder()
+                .followingUid(followingUser.getUid()).build();
+
+        userService.followUser(followAndUnfollowRequest);
+
+        ArgumentCaptor<Follower> followerArgumentCaptor = ArgumentCaptor.forClass(Follower.class);
+        verify(followerRepository).save(followerArgumentCaptor.capture());
+
+        Follower capturedValue = followerArgumentCaptor.getValue();
+
+        assertThat(capturedValue.getFollowerUid()).isEqualTo(user.getUid());
+        assertThat(capturedValue.getFollowingUid()).isEqualTo(followingUser.getUid());
+    }
+
+    @Test
+    void followUser_FollowingUserNotFound_ExceptionThrown() {
+
+        mockGetAuthenticatedUserMethod();
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.empty());
+
+        FollowAndUnfollowRequest followAndUnfollowRequest = FollowAndUnfollowRequest.builder()
+                .followingUid("something").build();
+
+
+        assertThatThrownBy(() -> userService.followUser(followAndUnfollowRequest))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining(String.format(userWithUidNotFoundError, "something"));
+    }
+
+
+    @Test
+    void followUser_FollowerAccountNotVerified_ExceptionThrown() {
+
+        mockGetAuthenticatedUserMethod();
+
+        UserAccount followingUser = new UserAccount(
+                "followingEmail",
+                "followingUsername",
+                "followingPassword",
+                "followingUid000",
+                "firstName",
+                "lastName",
+                "",
+                "",
+                new Date(),
+                false,
+                null
+        );
+
+        when(userRepository.findByUid(followingUser.getUid())).thenReturn(Optional.of(followingUser));
+
+        FollowAndUnfollowRequest followAndUnfollowRequest = FollowAndUnfollowRequest.builder()
+                .followingUid(followingUser.getUid()).build();
+
+        assertThatThrownBy(() -> userService.followUser(followAndUnfollowRequest))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining(String.format(accountNotVerifiedForUidError, followingUser.getUid()));
+    }
+
+    @Test
+    void followUser_RecordAlreadyPresent_ExceptionThrown() {
+
+        mockGetAuthenticatedUserMethod();
+
+        UserAccount followingUser = new UserAccount(
+                "followingEmail",
+                "followingUsername",
+                "followingPassword",
+                "followingUid000",
+                "firstName",
+                "lastName",
+                "",
+                "",
+                new Date(),
+                true,
+                null
+        );
+
+        when(userRepository.findByUid(followingUser.getUid())).thenReturn(Optional.of(followingUser));
+        when(followerRepository.findByFollowerUidAndFollowingUid(anyString(), anyString()))
+                .thenReturn(Optional.of(new Follower()));
+
+        FollowAndUnfollowRequest followAndUnfollowRequest = FollowAndUnfollowRequest.builder()
+                .followingUid(followingUser.getUid()).build();
+
+        assertThatThrownBy(() -> userService.followUser(followAndUnfollowRequest))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining(String.format(userAlreadyFollowingErrorMessage, followingUser.getUsername(), user.getUsername()));
+    }
+
+    @Test
+    void unfollowUser_EverythingValid_Success() {
+
+        mockGetAuthenticatedUserMethod();
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(new UserAccount()));
+        FollowAndUnfollowRequest followAndUnfollowRequest = FollowAndUnfollowRequest.builder()
+                .followingUid("something").build();
+
+        userService.unfollowUser(followAndUnfollowRequest);
+        verify(followerRepository, times(1))
+                .deleteByFollowingUidAndFollowerUid(anyString(), anyString());
+    }
+
+    @Test
+    void unfollowUser_FollowingUserNotFound_ExceptionThrown() {
+
+        mockGetAuthenticatedUserMethod();
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.empty());
+
+        FollowAndUnfollowRequest followAndUnfollowRequest = FollowAndUnfollowRequest.builder()
+                .followingUid("something").build();
+
+        assertThatThrownBy(() -> userService.unfollowUser(followAndUnfollowRequest))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining(String.format(userWithUidNotFoundError, followAndUnfollowRequest.getFollowingUid()));
+
+        verify(followerRepository, times(0))
+                .deleteByFollowingUidAndFollowerUid(anyString(), anyString());
+    }
+
+    @Test
+    void getAllFollowersOfUser_Success() {
+
+        List<UserAccount> userAccounts = Arrays.asList(new UserAccount(), new UserAccount());
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(new UserAccount()));
+
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(userRepository.findAllFollowersOfUser(user.getUid(), pageable))
+                .thenReturn(new PageImpl<>(userAccounts));
+
+        userService.getAllFollowersOfUser(user.getUid(), pageable);
+
+        verify(userRepository, times(1))
+                .findAllFollowersOfUser(anyString(), any());
+    }
+
+    @Test
+    void getAllFollowersOfUser_UserNotFound_ExceptionThrown() {
+
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getAllFollowersOfUser(user.getUid(), pageable))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining(String.format(userWithUidNotFoundError, user.getUid()));
+
+        verify(userRepository, times(0))
+                .findAllFollowersOfUser(anyString(), any());
+    }
+
+    @Test
+    void getAllFollowersOfUser_UIDNotValid_ExceptionThrown() {
+
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        assertThatThrownBy(() -> userService.getAllFollowersOfUser("", pageable))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining("User uid is invalid");
+
+        verify(userRepository, times(0))
+                .findAllFollowersOfUser(anyString(), any());
+    }
+
+    @Test
+    void getAllFollowingsOfUser_Success() {
+
+        PageRequest pageable = PageRequest.of(0, 10);
+        List<UserAccount> userAccounts = Arrays.asList(new UserAccount(), new UserAccount());
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.of(new UserAccount()));
+
+        when(userRepository.findAllUserAccountsUserIsFollowing(user.getUid(), pageable))
+                .thenReturn(new PageImpl<>(userAccounts));
+
+        userService.getAllFollowingsOfUser(user.getUid(), pageable);
+
+        verify(userRepository, times(1))
+                .findAllUserAccountsUserIsFollowing(anyString(), any());
+    }
+
+    @Test
+    void getAllFollowingsOfUser_UserNotFound_ExceptionThrown() {
+
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(userRepository.findByUid(anyString())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getAllFollowingsOfUser(user.getUid(), pageable))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining(String.format(userWithUidNotFoundError, user.getUid()));
+
+        verify(userRepository, times(0))
+                .findAllUserAccountsUserIsFollowing(anyString(), any());
+    }
+
+    @Test
+    void getAllFollowingsOfUser_UIDNotValid_ExceptionThrown() {
+
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        assertThatThrownBy(() -> userService.getAllFollowingsOfUser("", pageable))
+                .isInstanceOf(FollowerException.class)
+                .hasMessageContaining("User uid is invalid");
+
+        verify(userRepository, times(0))
+                .findAllUserAccountsUserIsFollowing(anyString(), any());
     }
 
 }
