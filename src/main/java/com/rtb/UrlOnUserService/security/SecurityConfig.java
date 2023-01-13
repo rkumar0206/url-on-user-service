@@ -46,7 +46,9 @@ public class SecurityConfig {
                             "/urlon/api/users/account/forgotPassword",
                             "/urlon/api/users/account/passwordReset",
                             "/urlon/api/users/checkEmailExists",
-                            "/urlon/api/users/checkUsernameExists"
+                            "/urlon/api/users/checkUsernameExists",
+                            "/urlon/api/users/usernameToUid",
+                            "/urlon/api/users/uidToUsername"
                     ).permitAll();
 
                     auth.anyRequest().authenticated();

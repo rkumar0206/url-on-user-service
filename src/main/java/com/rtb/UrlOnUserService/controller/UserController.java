@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -338,6 +339,49 @@ public class UserController {
             return new ResponseEntity<>(customResponse, HttpStatus.valueOf(Integer.parseInt(customResponse.getCode())));
         }
     }
+
+    @GetMapping("/usernameToUid")
+    public ResponseEntity<String> getUidFromUsername(@RequestParam("username") String username) {
+
+        // this url should not require any authentication
+        try {
+            if (username != null && StringUtils.hasLength(username.trim())) {
+
+                UserAccount user = userService.getUserByUserName(username);
+                if (user == null) {
+                    return ResponseEntity.noContent().build();
+                } else {
+                    return ResponseEntity.ok(user.getUid());
+                }
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/uidToUsername")
+    public ResponseEntity<String> getUsernameFromUid(@RequestParam("uid") String uid) {
+
+        // this url should not require any authentication
+        try {
+            if (uid != null && StringUtils.hasLength(uid.trim())) {
+
+                UserAccount user = userService.getUserByUid(uid);
+                if (user == null) {
+                    return ResponseEntity.noContent().build();
+                } else {
+                    return ResponseEntity.ok(user.getUsername());
+                }
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
 
     @GetMapping("/follower/user/{uid}")
     public ResponseEntity<CustomResponse> getAllFollowersOfUser(@PathVariable("uid") String uid, Pageable pageable) {
